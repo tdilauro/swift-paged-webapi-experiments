@@ -13,6 +13,10 @@
 		C4514FC023A85FE80007EBFB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C4514FBF23A85FE80007EBFB /* Assets.xcassets */; };
 		C4514FC323A85FE80007EBFB /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C4514FC223A85FE80007EBFB /* Preview Assets.xcassets */; };
 		C4514FC623A85FE80007EBFB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C4514FC423A85FE80007EBFB /* LaunchScreen.storyboard */; };
+		C4514FCF23A8617A0007EBFB /* NewsFeedModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4514FCE23A8617A0007EBFB /* NewsFeedModels.swift */; };
+		C4514FD223A872500007EBFB /* NewsFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4514FD123A872500007EBFB /* NewsFeedView.swift */; };
+		C4514FD423A876C60007EBFB /* feed-page1.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD323A876C60007EBFB /* feed-page1.json */; };
+		C4514FD623A8771F0007EBFB /* feed-page2.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD523A8771F0007EBFB /* feed-page2.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +28,10 @@
 		C4514FC223A85FE80007EBFB /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		C4514FC523A85FE80007EBFB /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C4514FC723A85FE80007EBFB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C4514FCE23A8617A0007EBFB /* NewsFeedModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsFeedModels.swift; sourceTree = "<group>"; };
+		C4514FD123A872500007EBFB /* NewsFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsFeedView.swift; sourceTree = "<group>"; };
+		C4514FD323A876C60007EBFB /* feed-page1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page1.json"; sourceTree = "<group>"; };
+		C4514FD523A8771F0007EBFB /* feed-page2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page2.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -56,6 +64,8 @@
 		C4514FB823A85FE50007EBFB /* NewsApp */ = {
 			isa = PBXGroup;
 			children = (
+				C4514FD023A8723C0007EBFB /* View */,
+				C4514FCD23A8605C0007EBFB /* Model */,
 				C4514FB923A85FE50007EBFB /* AppDelegate.swift */,
 				C4514FBB23A85FE50007EBFB /* SceneDelegate.swift */,
 				C4514FBD23A85FE50007EBFB /* ContentView.swift */,
@@ -71,8 +81,26 @@
 			isa = PBXGroup;
 			children = (
 				C4514FC223A85FE80007EBFB /* Preview Assets.xcassets */,
+				C4514FD323A876C60007EBFB /* feed-page1.json */,
+				C4514FD523A8771F0007EBFB /* feed-page2.json */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		C4514FCD23A8605C0007EBFB /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				C4514FCE23A8617A0007EBFB /* NewsFeedModels.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		C4514FD023A8723C0007EBFB /* View */ = {
+			isa = PBXGroup;
+			children = (
+				C4514FD123A872500007EBFB /* NewsFeedView.swift */,
+			);
+			path = View;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -135,7 +163,9 @@
 			files = (
 				C4514FC623A85FE80007EBFB /* LaunchScreen.storyboard in Resources */,
 				C4514FC323A85FE80007EBFB /* Preview Assets.xcassets in Resources */,
+				C4514FD423A876C60007EBFB /* feed-page1.json in Resources */,
 				C4514FC023A85FE80007EBFB /* Assets.xcassets in Resources */,
+				C4514FD623A8771F0007EBFB /* feed-page2.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,6 +176,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C4514FCF23A8617A0007EBFB /* NewsFeedModels.swift in Sources */,
+				C4514FD223A872500007EBFB /* NewsFeedView.swift in Sources */,
 				C4514FBA23A85FE50007EBFB /* AppDelegate.swift in Sources */,
 				C4514FBC23A85FE50007EBFB /* SceneDelegate.swift in Sources */,
 				C4514FBE23A85FE50007EBFB /* ContentView.swift in Sources */,
