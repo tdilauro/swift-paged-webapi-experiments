@@ -13,7 +13,6 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     private static let apiKey = "<REDACTED>"
     private static let urlBase = "https://newsapi.org/v2/everything?q=apple&apiKey=\(NewsFeed.apiKey)&language=en&page="
     private static let baseName = "feed-page"
-    private var nextPage = 0
     private var loadStatus = LoadStatus.ready(nextPage: 1)
 
     typealias Element = NewsItem
@@ -49,7 +48,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 return
             }
             self.loadStatus = .loading(page: nextPage)
-            self.loadStatus = self.parseArticleJSON(json: jsonData)
+            self.parseArticleJSON(json: jsonData)
 
         }
 
@@ -59,6 +58,8 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 
     func loadMoreArticlesLocal() {
         let suffix = "json"
+
+        print("Load more data?")
 
         guard case let .ready(nextPage) = loadStatus else { return }
 
@@ -73,22 +74,25 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
         }
 
         loadStatus = .loading(page: nextPage)
-        loadStatus = parseArticleJSON(json: jsonData)
+        parseArticleJSON(json: jsonData)
     }
 
-    func parseArticleJSON(json: Data) -> LoadStatus {
+    func parseArticleJSON(json: Data) {
         guard let jsonObject = try? JSONSerialization.jsonObject(with: json) else {
             print("Unable to parse JSON response")
-            return .error
+            loadStatus = .error
+            return
         }
         let topLevelMap = jsonObject as! [String: Any]
         guard topLevelMap["status"] as? String == "ok" else {
             print("Result 'status' not 'ok'")
-            return .done
+            loadStatus = .done
+            return
         }
         guard let articles = topLevelMap["articles"] as? [[String: Any]] else {
             print("No articles found.")
-            return .error
+            loadStatus = .error
+            return
         }
 
         var newArticles = [NewsItem]()
@@ -102,12 +106,11 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 
         DispatchQueue.main.async {
             self.newsItems.append(contentsOf: newArticles)
-        }
-
-        if case let .loading(page) = loadStatus {
-            return .ready(nextPage: page + 1)
-        } else {
-            return .done
+            if case let .loading(page) = self.loadStatus {
+                self.loadStatus = .ready(nextPage: page + 1)
+            } else {
+                self.loadStatus =  .done
+            }
         }
     }
 }
