@@ -17,6 +17,7 @@
 		C4514FD223A872500007EBFB /* NewsFeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4514FD123A872500007EBFB /* NewsFeedView.swift */; };
 		C4514FD423A876C60007EBFB /* feed-page1.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD323A876C60007EBFB /* feed-page1.json */; };
 		C4514FD623A8771F0007EBFB /* feed-page2.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD523A8771F0007EBFB /* feed-page2.json */; };
+		C4514FD823A8862D0007EBFB /* feed-page3.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD723A8862D0007EBFB /* feed-page3.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +33,7 @@
 		C4514FD123A872500007EBFB /* NewsFeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsFeedView.swift; sourceTree = "<group>"; };
 		C4514FD323A876C60007EBFB /* feed-page1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page1.json"; sourceTree = "<group>"; };
 		C4514FD523A8771F0007EBFB /* feed-page2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page2.json"; sourceTree = "<group>"; };
+		C4514FD723A8862D0007EBFB /* feed-page3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page3.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,6 +85,7 @@
 				C4514FC223A85FE80007EBFB /* Preview Assets.xcassets */,
 				C4514FD323A876C60007EBFB /* feed-page1.json */,
 				C4514FD523A8771F0007EBFB /* feed-page2.json */,
+				C4514FD723A8862D0007EBFB /* feed-page3.json */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
@@ -165,6 +168,7 @@
 				C4514FC323A85FE80007EBFB /* Preview Assets.xcassets in Resources */,
 				C4514FD423A876C60007EBFB /* feed-page1.json in Resources */,
 				C4514FC023A85FE80007EBFB /* Assets.xcassets in Resources */,
+				C4514FD823A8862D0007EBFB /* feed-page3.json in Resources */,
 				C4514FD623A8771F0007EBFB /* feed-page2.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
