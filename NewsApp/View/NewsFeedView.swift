@@ -12,19 +12,32 @@ struct NewsFeedView: View {
     @ObservedObject var newsFeed = NewsFeed()
 
     var body: some View {
-        List(newsFeed.newsItems) { article in
-            VStack(alignment: .leading) {
-                Text(article.title)
-                    .font(.headline)
-                Text(article.author)
-                    .font(.subheadline)
+        List(newsFeed.newsItems) { (article: NewsItem) in
+            NewsFeedListItem(article: article)
+                .padding()
+                .onAppear {
+                    self.newsFeed.loadMoreData(ifListEndsWith: article)
             }
-            .padding()
         }
-//        .onAppear(perform: newsFeed.loadMoreArticlesRemote)
-        .onAppear(perform: newsFeed.loadMoreArticlesLocal)
+        .onAppear {
+            self.newsFeed.loadMoreData()
+        }
     }
 }
+
+struct NewsFeedListItem: View {
+    var article: NewsItem
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Text(article.title)
+                .font(.headline)
+            Text(article.author)
+                .font(.subheadline)
+        }
+    }
+}
+
 
 struct NewsFeedView_Previews: PreviewProvider {
     static var previews: some View {

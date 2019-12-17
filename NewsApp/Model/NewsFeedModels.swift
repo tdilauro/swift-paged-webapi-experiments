@@ -34,8 +34,37 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
         case done
     }
 
+    func loadMoreData(ifListEndsWith: NewsItem? = nil) {
+        guard case let .ready(nextPage) = loadStatus else { return }
+
+        if let article = ifListEndsWith, !nFromEnd(offset: 4, item: article) {
+            return
+        }
+
+        print("loading page \(nextPage)")
+
+        loadMoreArticlesRemote()
+    }
+
+    func nFromEnd(offset: Int, item: NewsItem) -> Bool {
+        guard !newsItems.isEmpty else {
+            return false
+        }
+
+        guard let itemIndex = firstIndex(where: { AnyHashable($0.id) == AnyHashable(item.id) }) else {
+            return false
+        }
+
+        let distance = self.distance(from: itemIndex, to: endIndex)
+        let offset = offset < count ? offset : count - 1
+        return offset == (distance - 1)
+    }
+
+
     func loadMoreArticlesRemote() {
         guard case let .ready(nextPage) = loadStatus else { return }
+
+        loadStatus = .loading(page: nextPage)
 
         guard let url = URL(string: "\(Self.urlBase)\(nextPage)") else {
             print("Invalid URL '\(Self.urlBase)\(nextPage)'")
@@ -59,9 +88,9 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     func loadMoreArticlesLocal() {
         let suffix = "json"
 
-        print("Load more data?")
-
         guard case let .ready(nextPage) = loadStatus else { return }
+
+        loadStatus = .loading(page: nextPage)
 
         guard let path = Bundle.main.path(forResource: "\(Self.baseName)\(nextPage)", ofType: suffix) else {
             print("Error determining path for file '\(Self.baseName)\(nextPage).\(suffix)'")
@@ -73,7 +102,6 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
             return
         }
 
-        loadStatus = .loading(page: nextPage)
         parseArticleJSON(json: jsonData)
     }
 
