@@ -14,14 +14,15 @@ struct NewsFeedView: View {
     var body: some View {
         List(newsFeed.newsItems) { article in
             VStack(alignment: .leading) {
-                Text(article.author)
-                    .font(.headline)
                 Text(article.title)
+                    .font(.headline)
+                Text(article.author)
                     .font(.subheadline)
             }
             .padding()
         }
-        .onAppear(perform: newsFeed.loadMoreArticles)
+//        .onAppear(perform: newsFeed.loadMoreArticlesRemote)
+        .onAppear(perform: newsFeed.loadMoreArticlesLocal)
     }
 }
 
