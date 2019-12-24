@@ -11,7 +11,9 @@ import Foundation
 
 class NewsFeed: ObservableObject, RandomAccessCollection {
     private static let apiKey = "<REDACTED>"
-    private static let urlBase = "https://newsapi.org/v2/everything?q=apple&apiKey=\(NewsFeed.apiKey)&language=en&page="
+    private static let query = "apple".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
+
+    private static let urlBase = "https://newsapi.org/v2/everything?q=\(NewsFeed.query)&apiKey=\(NewsFeed.apiKey)&language=en&page="
     private static let baseName = "feed-page"
     private var loadStatus = LoadStatus.ready(nextPage: 1)
 
@@ -43,7 +45,10 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 
         print("loading page \(nextPage)")
 
-        loadMoreArticlesRemote()
+        let useRemote = true
+        useRemote ? loadMoreArticlesRemote() : loadMoreArticlesLocal()
+//        loadMoreArticlesRemote()
+//        loadMoreArticlesLocal()
     }
 
     func nFromEnd(offset: Int, item: NewsItem) -> Bool {
@@ -106,34 +111,20 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     func parseArticleJSON(json: Data) {
-        guard let jsonObject = try? JSONSerialization.jsonObject(with: json) else {
-            print("Unable to parse JSON response")
-            loadStatus = .error
-            return
-        }
-        let topLevelMap = jsonObject as! [String: Any]
-        guard topLevelMap["status"] as? String == "ok" else {
-            print("Result 'status' not 'ok'")
-            loadStatus = .done
-            return
-        }
-        guard let articles = topLevelMap["articles"] as? [[String: Any]] else {
-            print("No articles found.")
-            loadStatus = .error
+        guard let apiResponse = try? JSONDecoder().decode(NewsApiResponse.self, from: json) else {
+            self.loadStatus = .error
+            print("unable to parse response")
             return
         }
 
-        var newArticles = [NewsItem]()
-        for article in articles {
-            guard let title = article["title"] as? String,
-                let author = article["author"] as? String else {
-                    continue
-            }
-            newArticles.append(NewsItem(title: title, author: author))
+        guard apiResponse.status == "ok" else {
+            self.loadStatus = .done
+            print("response finished with status '\(apiResponse.status)'")
+            return
         }
 
         DispatchQueue.main.async {
-            self.newsItems.append(contentsOf: newArticles)
+            self.newsItems.append(contentsOf: apiResponse.articles!)
             if case let .loading(page) = self.loadStatus {
                 self.loadStatus = .ready(nextPage: page + 1)
             } else {
@@ -143,15 +134,25 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 }
 
+struct NewsApiResponse: Decodable {
+    var status: String
+    var articles: [NewsItem]?
+}
 
-class NewsItem: Identifiable {
-    var uuid = UUID()
+
+struct NewsItem: Identifiable, Decodable {
+    var id = UUID()
 
     var title: String
     var author: String
 
-    init (title: String, author: String) {
-        self.title = title
-        self.author = author
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = ( try? container.decode(String.self, forKey: .title) ) ?? "(untitled)"
+        author = ( try? container.decode(String.self, forKey: .author) ) ?? "(unattributed)"
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case title, author
     }
 }
