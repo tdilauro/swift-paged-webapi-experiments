@@ -7,15 +7,43 @@
 //
 
 import Foundation
+import Combine
+
+
+enum NewsFeedError: Error {
+    case pageError
+}
+
+
+enum FileError: Error {
+    case `default`
+}
 
 
 class NewsFeed: ObservableObject, RandomAccessCollection {
-    private static let apiKey = "<REDACTED>"
-    private static let query = "apple".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
+
+    enum LoadStatus {
+        case ready (nextPage: Int)
+        case loading (page: Int)
+        case error
+        case done
+
+        var isReady: Bool {
+            switch self {
+            case .ready: return true
+            default: return false
+            }
+        }
+    }
+
+    private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
+    private static let query = "Donald Trump".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
 
     private static let urlBase = "https://newsapi.org/v2/everything?q=\(NewsFeed.query)&apiKey=\(NewsFeed.apiKey)&language=en&page="
     private static let baseName = "feed-page"
+
     private var loadStatus = LoadStatus.ready(nextPage: 1)
+    private var cancellable: AnyCancellable?
 
     typealias Element = NewsItem
 
@@ -28,27 +56,74 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
         return newsItems[position]
     }
 
+    private let itemSubject = PassthroughSubject<NewsItem?, Error>()
+    private lazy var pagePublisher: AnyPublisher<Data, Error> = {
+        print("setting up pagePublisher")
+        return itemSubject
+            .filter({ article -> Bool in
+                guard case let .ready(nextPage) = self.loadStatus else { return false }
 
-    enum LoadStatus {
-        case ready (nextPage: Int)
-        case loading (page: Int)
-        case error
-        case done
+                if let article = article, !self.nFromEnd(offset: 4, item: article) {
+                    return false
+                }
+
+                print("filter: \(self.loadStatus) \(self.loadStatus.isReady)")
+                self.loadStatus = .loading(page: nextPage)
+                return true
+            })
+            .tryMap({ _ -> String in
+                guard case let .loading(page) = self.loadStatus else {
+                    throw NewsFeedError.pageError
+                }
+                return "\(Self.urlBase)\(page)"
+            })
+            .flatMap { urlString in
+                URLSession.shared.dataTaskPublisher(for: URL(string: urlString)!)
+                    .mapError { $0 as Error }
+            }
+            .map { $0.data }
+            .eraseToAnyPublisher()
+    }()
+
+
+    init() {
+        cancellable = pagePublisher
+            .decode(type: NewsApiResponse.self, decoder: JSONDecoder())
+            .mapError({ error -> Error in
+                self.loadStatus = .error
+                print("unable to parse response")
+                return error
+            })
+            .filter({ apiResponse -> Bool in
+                if apiResponse.status == "ok" {
+                    return true
+                } else {
+                    self.loadStatus = .done
+                    print("response finished with status '\(apiResponse.status)'")
+                    return false
+                }
+            })
+            .receive(on: RunLoop.main)
+            .sink(receiveCompletion: { completion in
+                switch completion {
+                case .failure(let error): print("subscription ended in error: \(error) - \(error.localizedDescription)")
+                case .finished: print("subscription finished")
+                }
+            },
+                  receiveValue: { data in
+                    self.newsItems.append(contentsOf: data.articles!)
+                    if case let .loading(page) = self.loadStatus {
+                        self.loadStatus = .ready(nextPage: page + 1)
+                    } else {
+                        self.loadStatus = .done
+                    }
+            }
+            )
+
     }
 
     func loadMoreData(ifListEndsWith: NewsItem? = nil) {
-        guard case let .ready(nextPage) = loadStatus else { return }
-
-        if let article = ifListEndsWith, !nFromEnd(offset: 4, item: article) {
-            return
-        }
-
-        print("loading page \(nextPage)")
-
-        let useRemote = true
-        useRemote ? loadMoreArticlesRemote() : loadMoreArticlesLocal()
-//        loadMoreArticlesRemote()
-//        loadMoreArticlesLocal()
+        itemSubject.send(ifListEndsWith)
     }
 
     func nFromEnd(offset: Int, item: NewsItem) -> Bool {
@@ -66,72 +141,35 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
 
-    func loadMoreArticlesRemote() {
-        guard case let .ready(nextPage) = loadStatus else { return }
-
-        loadStatus = .loading(page: nextPage)
-
-        guard let url = URL(string: "\(Self.urlBase)\(nextPage)") else {
-            print("Invalid URL '\(Self.urlBase)\(nextPage)'")
-                return
-        }
-
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            guard let jsonData = data else {
-                print("Error \(error?.localizedDescription ?? "Unknown error") for URL '\(Self.urlBase)'")
-                return
-            }
-            self.loadStatus = .loading(page: nextPage)
-            self.parseArticleJSON(json: jsonData)
-
-        }
-
-        task.resume()
-
-    }
-
-    func loadMoreArticlesLocal() {
-        let suffix = "json"
-
-        guard case let .ready(nextPage) = loadStatus else { return }
-
-        loadStatus = .loading(page: nextPage)
-
-        guard let path = Bundle.main.path(forResource: "\(Self.baseName)\(nextPage)", ofType: suffix) else {
-            print("Error determining path for file '\(Self.baseName)\(nextPage).\(suffix)'")
-            return
-        }
-
-        guard let jsonData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) else {
-            print("Unable to read JSON data from '\(path)'")
-            return
-        }
-
-        parseArticleJSON(json: jsonData)
-    }
-
-    func parseArticleJSON(json: Data) {
-        guard let apiResponse = try? JSONDecoder().decode(NewsApiResponse.self, from: json) else {
-            self.loadStatus = .error
-            print("unable to parse response")
-            return
-        }
-
-        guard apiResponse.status == "ok" else {
-            self.loadStatus = .done
-            print("response finished with status '\(apiResponse.status)'")
-            return
-        }
-
-        DispatchQueue.main.async {
-            self.newsItems.append(contentsOf: apiResponse.articles!)
-            if case let .loading(page) = self.loadStatus {
-                self.loadStatus = .ready(nextPage: page + 1)
-            } else {
-                self.loadStatus =  .done
-            }
-        }
-    }
+//    static func readContent(forResource fileName: String, ofType: String?) throws -> Data {
+//        print("reading from \(fileName).\(ofType!)")
+//        if let path = Bundle.main.path(forResource: fileName, ofType: ofType),
+//            let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
+//            return data
+//        } else {
+//            throw FileError.default
+//        }
+//    }
+//
+//    func loadMoreArticlesLocal() {
+//        let suffix = "json"
+//
+//        guard case let .ready(nextPage) = loadStatus else { return }
+//
+//        loadStatus = .loading(page: nextPage)
+//
+//        guard let path = Bundle.main.path(forResource: "\(Self.baseName)\(nextPage)", ofType: suffix) else {
+//            print("Error determining path for file '\(Self.baseName)\(nextPage).\(suffix)'")
+//            return
+//        }
+//
+//        guard let jsonData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) else {
+//            print("Unable to read JSON data from '\(path)'")
+//            return
+//        }
+//
+//        parseArticleJSON(json: jsonData)
+//    }
 }
 
 struct NewsApiResponse: Decodable {
