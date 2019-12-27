@@ -172,6 +172,61 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 //    }
 }
 
+
+class NewsAPIorg {
+
+    private let defaultBaseURL = URL(string: "https://newsapi.org/v2/everything")!
+
+    private let apiKey: String
+    private let baseURL: URL
+
+    init(_ url: URL, apiKey: String) {
+        self.apiKey = apiKey
+        self.baseURL = url
+    }
+
+    convenience init?(url: String, apiKey: String) {
+        guard let url = URL(string: url) else {
+            return nil
+        }
+        self.init(url, apiKey: apiKey)
+    }
+
+}
+
+extension NewsAPIorg {
+
+    func buildQueryURL(_ query: String, language: String = "en", from baseURL: String) -> URL? {
+        guard var components = URLComponents(string: baseURL) else {
+            return nil
+        }
+
+        components.queryItems = [
+            URLQueryItem(name: "language", value: "en"),
+            URLQueryItem(name: "q", value: query)
+        ]
+        return components.url
+    }
+
+    static func getPageURL(_ page: Int, from baseURL: URL) -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+
+        components.queryItems = components.queryItems?.filter { $0.name != "page" }
+        components.queryItems!.append(URLQueryItem(name: "page", value: "\(page)"))
+        return components.url
+    }
+
+    static func requestWithXApiKeyHeader(_ apiKey: String, from url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
+        return request
+    }
+
+}
+
+
 struct NewsApiResponse: Decodable {
     var status: String
     var articles: [NewsItem]?
