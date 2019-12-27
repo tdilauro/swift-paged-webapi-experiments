@@ -26,7 +26,7 @@ enum FileError: Error {
 
 typealias FeedAPI = NewsAPIorg
 typealias NewsItem = FeedAPI.NewsItem
-typealias NewsApiResponse = FeedAPI.NewsApiResponse
+typealias ApiResponse = FeedAPI.NewsApiResponse
 
 class NewsFeed: ObservableObject, RandomAccessCollection {
 
@@ -62,8 +62,8 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
-    private func feedQueryPublisher(feed api: FeedAPI, query: String? = nil) -> AnyPublisher<Data, Error> {
-        print("setting up pagePublisher")
+    private func feedPublisher(feed api: FeedAPI, query: String? = nil) -> AnyPublisher<Data, Error> {
+        print("setting up Feed Publisher")
         return itemSubject
             .filter({ article -> Bool in
                 guard case let .ready(nextPage) = self.loadStatus else { return false }
@@ -96,8 +96,8 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 
     init() {
         let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        cancellable = feedQueryPublisher(feed: feedAPI, query: Self.query)
-            .decode(type: NewsApiResponse.self, decoder: JSONDecoder())
+        cancellable = feedPublisher(feed: feedAPI, query: Self.query)
+            .decode(type: ApiResponse.self, decoder: JSONDecoder())
             .mapError({ error -> Error in
                 self.loadStatus = .error
                 print("unable to parse response")
@@ -187,17 +187,6 @@ extension NewsAPIorg {
         return requestWithXApiKeyHeader(from: pageURL)
     }
 
-    public func responseStatus(response: NewsApiResponse) -> ResponseStatus {
-        switch response.status {
-        case "ok": return .hasItems
-        default: return .other(explanation: "response finished with status '\(response.status)'")
-        }
-    }
-
-    public func responseItems(response: NewsApiResponse) -> [NewsItem] {
-        response.articles ?? []
-    }
-
     private func buildQueryURL(_ query: String, language: String = "en") -> URL? {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return nil
@@ -233,11 +222,21 @@ extension NewsAPIorg {
 
 extension NewsAPIorg {
 
+    public func responseStatus(response: NewsApiResponse) -> ResponseStatus {
+        switch response.status {
+        case "ok": return .hasItems
+        default: return .other(explanation: "response finished with status '\(response.status)'")
+        }
+    }
+
+    public func responseItems(response: NewsApiResponse) -> [NewsItem] {
+        response.articles ?? []
+    }
+
     struct NewsApiResponse: Decodable {
         var status: String
         var articles: [NewsItem]?
     }
-
 
     struct NewsItem: Identifiable, Decodable {
         var id = UUID()
