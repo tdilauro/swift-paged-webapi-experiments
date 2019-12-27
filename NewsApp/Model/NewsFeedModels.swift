@@ -19,6 +19,8 @@ enum FileError: Error {
     case `default`
 }
 
+typealias NewsItem = NewsAPIorg.NewsItem
+typealias NewsApiResponse = NewsAPIorg.NewsApiResponse
 
 class NewsFeed: ObservableObject, RandomAccessCollection {
 
@@ -227,25 +229,31 @@ extension NewsAPIorg {
 }
 
 
-struct NewsApiResponse: Decodable {
-    var status: String
-    var articles: [NewsItem]?
-}
+// MARK: NewsAPI.org JSON decoding
 
+extension NewsAPIorg {
 
-struct NewsItem: Identifiable, Decodable {
-    var id = UUID()
-
-    var title: String
-    var author: String
-
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        title = ( try? container.decode(String.self, forKey: .title) ) ?? "(untitled)"
-        author = ( try? container.decode(String.self, forKey: .author) ) ?? "(unattributed)"
+    struct NewsApiResponse: Decodable {
+        var status: String
+        var articles: [NewsItem]?
     }
 
-    enum CodingKeys: String, CodingKey {
-        case title, author
+
+    struct NewsItem: Identifiable, Decodable {
+        var id = UUID()
+
+        var title: String
+        var author: String
+
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            title = ( try? container.decode(String.self, forKey: .title) ) ?? "(untitled)"
+            author = ( try? container.decode(String.self, forKey: .author) ) ?? "(unattributed)"
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case title, author
+        }
     }
+
 }
