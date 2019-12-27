@@ -145,36 +145,6 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
         return offset == (distance - 1)
     }
 
-
-//    static func readContent(forResource fileName: String, ofType: String?) throws -> Data {
-//        print("reading from \(fileName).\(ofType!)")
-//        if let path = Bundle.main.path(forResource: fileName, ofType: ofType),
-//            let data = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) {
-//            return data
-//        } else {
-//            throw FileError.default
-//        }
-//    }
-//
-//    func loadMoreArticlesLocal() {
-//        let suffix = "json"
-//
-//        guard case let .ready(nextPage) = loadStatus else { return }
-//
-//        loadStatus = .loading(page: nextPage)
-//
-//        guard let path = Bundle.main.path(forResource: "\(Self.baseName)\(nextPage)", ofType: suffix) else {
-//            print("Error determining path for file '\(Self.baseName)\(nextPage).\(suffix)'")
-//            return
-//        }
-//
-//        guard let jsonData = try? Data(contentsOf: URL(fileURLWithPath: path), options: .mappedIfSafe) else {
-//            print("Unable to read JSON data from '\(path)'")
-//            return
-//        }
-//
-//        parseArticleJSON(json: jsonData)
-//    }
 }
 
 
