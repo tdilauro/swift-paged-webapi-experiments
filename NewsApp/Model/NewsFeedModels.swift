@@ -45,7 +45,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-    private static let query = "Donald Trump"
+    private static let query: String? = nil
 
     private var loadStatus = LoadStatus.ready(nextPage: 1)
     private var cancellable: AnyCancellable?
@@ -179,7 +179,6 @@ class NewsAPIorg {
 extension NewsAPIorg {
 
     public func requestFor(query: String? = nil, page: Int) -> URLRequest? {
-        let query = query ?? ""
         guard
             let queryURL = buildQueryURL(query),
             let pageURL = Self.getPageURL(page, from: queryURL)
@@ -187,15 +186,17 @@ extension NewsAPIorg {
         return requestWithXApiKeyHeader(from: pageURL)
     }
 
-    private func buildQueryURL(_ query: String, language: String = "en") -> URL? {
+    private func buildQueryURL(_ query: String?, language: String = "en") -> URL? {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return nil
         }
 
         components.queryItems = [
             URLQueryItem(name: "language", value: "en"),
-            URLQueryItem(name: "q", value: query)
         ]
+        if let query = query {
+            components.queryItems?.append( URLQueryItem(name: "q", value: query) )
+        }
         return components.url
     }
 
@@ -225,6 +226,7 @@ extension NewsAPIorg {
     public func responseStatus(response: NewsApiResponse) -> ResponseStatus {
         switch response.status {
         case "ok": return .hasItems
+        case "error": return .other(explanation: response.message ?? "response finished with status '\(response.status)'")
         default: return .other(explanation: "response finished with status '\(response.status)'")
         }
     }
@@ -235,6 +237,7 @@ extension NewsAPIorg {
 
     struct NewsApiResponse: Decodable {
         var status: String
+        var message: String?
         var articles: [NewsItem]?
     }
 
