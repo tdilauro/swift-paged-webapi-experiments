@@ -12,6 +12,7 @@ import Combine
 
 enum NewsFeedError: Error {
     case pageError
+    case requestError
 }
 
 
@@ -19,8 +20,9 @@ enum FileError: Error {
     case `default`
 }
 
-typealias NewsItem = NewsAPIorg.NewsItem
-typealias NewsApiResponse = NewsAPIorg.NewsApiResponse
+typealias FeedAPI = NewsAPIorg
+typealias NewsItem = FeedAPI.NewsItem
+typealias NewsApiResponse = FeedAPI.NewsApiResponse
 
 class NewsFeed: ObservableObject, RandomAccessCollection {
 
@@ -39,10 +41,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-    private static let query = "Donald Trump".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!
-
-    private static let urlBase = "https://newsapi.org/v2/everything?q=\(NewsFeed.query)&apiKey=\(NewsFeed.apiKey)&language=en&page="
-    private static let baseName = "feed-page"
+    private static let query = "Donald Trump"
 
     private var loadStatus = LoadStatus.ready(nextPage: 1)
     private var cancellable: AnyCancellable?
@@ -59,7 +58,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
-    private lazy var pagePublisher: AnyPublisher<Data, Error> = {
+    private func feedQueryPublisher(feed api: FeedAPI, query: String? = nil) -> AnyPublisher<Data, Error> {
         print("setting up pagePublisher")
         return itemSubject
             .filter({ article -> Bool in
@@ -73,23 +72,27 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 self.loadStatus = .loading(page: nextPage)
                 return true
             })
-            .tryMap({ _ -> String in
+            .tryMap({ _ -> URLRequest in
                 guard case let .loading(page) = self.loadStatus else {
                     throw NewsFeedError.pageError
                 }
-                return "\(Self.urlBase)\(page)"
+                guard let request = api.requestFor(query: query, page: page) else {
+                    throw NewsFeedError.requestError
+                }
+                return request
             })
-            .flatMap { urlString in
-                URLSession.shared.dataTaskPublisher(for: URL(string: urlString)!)
+            .flatMap { request in
+                URLSession.shared.dataTaskPublisher(for: request)
                     .mapError { $0 as Error }
             }
-            .map { $0.data }
-            .eraseToAnyPublisher()
-    }()
+        .map { $0.data }
+        .eraseToAnyPublisher()
+    }
 
 
     init() {
-        cancellable = pagePublisher
+        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
+        cancellable = feedQueryPublisher(feed: feedAPI, query: Self.query)
             .decode(type: NewsApiResponse.self, decoder: JSONDecoder())
             .mapError({ error -> Error in
                 self.loadStatus = .error
@@ -177,7 +180,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
 
 class NewsAPIorg {
 
-    private let defaultBaseURL = URL(string: "https://newsapi.org/v2/everything")!
+    private static let defaultBaseURL = URL(string: "https://newsapi.org/v2/everything")!
 
     private let apiKey: String
     private let baseURL: URL
@@ -194,12 +197,25 @@ class NewsAPIorg {
         self.init(url, apiKey: apiKey)
     }
 
+    convenience init(apiKey: String) {
+        self.init(Self.defaultBaseURL, apiKey: apiKey)
+    }
+
 }
 
 extension NewsAPIorg {
 
-    func buildQueryURL(_ query: String, language: String = "en", from baseURL: String) -> URL? {
-        guard var components = URLComponents(string: baseURL) else {
+    public func requestFor(query: String? = nil, page: Int) -> URLRequest? {
+        let query = query ?? ""
+        guard
+            let queryURL = buildQueryURL(query),
+            let pageURL = Self.getPageURL(page, from: queryURL)
+            else { return nil }
+        return requestWithXApiKeyHeader(from: pageURL)
+    }
+
+    private func buildQueryURL(_ query: String, language: String = "en") -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return nil
         }
 
@@ -210,7 +226,7 @@ extension NewsAPIorg {
         return components.url
     }
 
-    static func getPageURL(_ page: Int, from baseURL: URL) -> URL? {
+    private static func getPageURL(_ page: Int, from baseURL: URL) -> URL? {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return nil
         }
@@ -220,7 +236,7 @@ extension NewsAPIorg {
         return components.url
     }
 
-    static func requestWithXApiKeyHeader(_ apiKey: String, from url: URL) -> URLRequest {
+    private func requestWithXApiKeyHeader(from url: URL) -> URLRequest {
         var request = URLRequest(url: url)
         request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
         return request
