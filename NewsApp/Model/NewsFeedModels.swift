@@ -15,6 +15,10 @@ enum NewsFeedError: Error {
     case requestError
 }
 
+enum ResponseStatus {
+    case hasItems
+    case other (explanation: String)
+}
 
 enum FileError: Error {
     case `default`
@@ -100,11 +104,10 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 return error
             })
             .filter({ apiResponse -> Bool in
-                if apiResponse.status == "ok" {
-                    return true
-                } else {
-                    self.loadStatus = .done
-                    print("response finished with status '\(apiResponse.status)'")
+                switch feedAPI.responseStatus(response: apiResponse) {
+                case .hasItems: return true
+                case .other (let message):
+                    print(message)
                     return false
                 }
             })
@@ -116,7 +119,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 }
             },
                   receiveValue: { data in
-                    self.newsItems.append(contentsOf: data.articles!)
+                    self.newsItems.append(contentsOf: feedAPI.responseItems(response: data))
                     if case let .loading(page) = self.loadStatus {
                         self.loadStatus = .ready(nextPage: page + 1)
                     } else {
@@ -182,6 +185,17 @@ extension NewsAPIorg {
             let pageURL = Self.getPageURL(page, from: queryURL)
             else { return nil }
         return requestWithXApiKeyHeader(from: pageURL)
+    }
+
+    public func responseStatus(response: NewsApiResponse) -> ResponseStatus {
+        switch response.status {
+        case "ok": return .hasItems
+        default: return .other(explanation: "response finished with status '\(response.status)'")
+        }
+    }
+
+    public func responseItems(response: NewsApiResponse) -> [NewsItem] {
+        response.articles ?? []
     }
 
     private func buildQueryURL(_ query: String, language: String = "en") -> URL? {
