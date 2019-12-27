@@ -45,7 +45,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-    private static let query: String? = nil
+    private static let query: String? = "Cyclone"
 
     private var loadStatus = LoadStatus.ready(nextPage: 1)
     private var cancellable: AnyCancellable?
@@ -62,8 +62,8 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     }
 
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
-    private func feedPublisher(feed api: FeedAPI, query: String? = nil) -> AnyPublisher<Data, Error> {
-        print("setting up Feed Publisher")
+    private func feedSubscription(feed api: FeedAPI, query: String? = nil) -> AnyCancellable {
+        print("setting up Feed Subscription")
         return itemSubject
             .filter({ article -> Bool in
                 guard case let .ready(nextPage) = self.loadStatus else { return false }
@@ -85,18 +85,11 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 }
                 return request
             })
-            .flatMap { request in
+            .flatMap({ request in
                 URLSession.shared.dataTaskPublisher(for: request)
                     .mapError { $0 as Error }
-            }
-        .map { $0.data }
-        .eraseToAnyPublisher()
-    }
-
-
-    init() {
-        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        cancellable = feedPublisher(feed: feedAPI, query: Self.query)
+            })
+            .map { $0.data }
             .decode(type: ApiResponse.self, decoder: JSONDecoder())
             .mapError({ error -> Error in
                 self.loadStatus = .error
@@ -104,7 +97,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 return error
             })
             .filter({ apiResponse -> Bool in
-                switch feedAPI.responseStatus(response: apiResponse) {
+                switch api.responseStatus(response: apiResponse) {
                 case .hasItems: return true
                 case .other (let message):
                     print(message)
@@ -119,15 +112,21 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 }
             },
                   receiveValue: { data in
-                    self.newsItems.append(contentsOf: feedAPI.responseItems(response: data))
+                    self.newsItems.append(contentsOf: api.responseItems(response: data))
                     if case let .loading(page) = self.loadStatus {
                         self.loadStatus = .ready(nextPage: page + 1)
                     } else {
                         self.loadStatus = .done
                     }
             }
-            )
+        )
 
+    }
+
+
+    init() {
+        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
+        cancellable = feedSubscription(feed: feedAPI, query: Self.query)
     }
 
     func loadMoreData(ifListEndsWith: NewsItem? = nil) {
