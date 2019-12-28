@@ -97,7 +97,7 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 return error
             })
             .filter({ apiResponse -> Bool in
-                switch api.responseStatus(response: apiResponse) {
+                switch apiResponse.responseStatus {
                 case .hasItems: return true
                 case .other (let message):
                     print(message)
@@ -111,8 +111,8 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                 case .finished: print("subscription finished")
                 }
             },
-                  receiveValue: { data in
-                    self.newsItems.append(contentsOf: api.responseItems(response: data))
+                  receiveValue: { apiResponse in
+                    self.newsItems.append(contentsOf: apiResponse.responseItems)
                     if case let .loading(page) = self.loadStatus {
                         self.loadStatus = .ready(nextPage: page + 1)
                     } else {
@@ -222,22 +222,20 @@ extension NewsAPIorg {
 
 extension NewsAPIorg {
 
-    public func responseStatus(response: NewsApiResponse) -> ResponseStatus {
-        switch response.status {
-        case "ok": return .hasItems
-        case "error": return .other(explanation: response.message ?? "response finished with status '\(response.status)'")
-        default: return .other(explanation: "response finished with status '\(response.status)'")
-        }
-    }
-
-    public func responseItems(response: NewsApiResponse) -> [NewsItem] {
-        response.articles ?? []
-    }
-
     struct NewsApiResponse: Decodable {
         var status: String
         var message: String?
         var articles: [NewsItem]?
+
+        // MARK - Paged WebAPI (todo: Protocol?)
+        var responseItems: [NewsItem] { return self.articles ?? [] }
+        var responseStatus: ResponseStatus {
+            switch self.status {
+            case "ok": return .hasItems
+            case "error": return .other(explanation: self.message ?? "response finished with status '\(self.status)'")
+            default: return .other(explanation: "response finished with status '\(self.status)'")
+            }
+        }
     }
 
     struct NewsItem: Identifiable, Decodable {
