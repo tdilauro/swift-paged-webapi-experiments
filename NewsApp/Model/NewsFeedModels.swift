@@ -12,6 +12,7 @@ import Combine
 
 enum NewsFeedError: Error {
     case pageError
+    case queryError
     case requestError
 }
 
@@ -45,19 +46,20 @@ class NewsFeed: ObservableObject {
     }
 
     private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-    private static let query: String? = "Cyclone"
 
     private var loadStatus = LoadStatus.ready(nextPage: 1)
     private var cancellable: AnyCancellable?
 
     @Published var newsItems = [NewsItem]()
+    let queryString: String = "Cyclone"
 
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
 
 
     init() {
         let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        cancellable = feedSubscription(feed: feedAPI, query: Self.query)
+        let query = feedAPI.queryFromString(queryString)
+        cancellable = feedSubscription(feed: feedAPI, query: query)
     }
 
 }
@@ -86,7 +88,7 @@ extension NewsFeed {
 
 extension NewsFeed {
 
-    private func feedSubscription(feed api: FeedAPI, query: String? = nil) -> AnyCancellable {
+    private func feedSubscription(feed api: FeedAPI, query: FeedAPI.Query? = nil) -> AnyCancellable {
         print("setting up Feed Subscription")
         return itemSubject
             .filter({ article -> Bool in
@@ -104,8 +106,8 @@ extension NewsFeed {
                 guard case let .loading(page) = self.loadStatus else {
                     throw NewsFeedError.pageError
                 }
-                guard let request = api.requestFor(query: query, page: page) else {
-                    throw NewsFeedError.requestError
+                guard let request = query?.requestForPage(page) else {
+                    throw NewsFeedError.queryError
                 }
                 return request
             })
@@ -229,9 +231,28 @@ extension NewsAPIorg {
 }
 
 
-// MARK: NewsAPI.org JSON decoding
-
 extension NewsAPIorg {
+
+    // MARK: Query
+
+    struct Query {
+        let feedAPI: NewsAPIorg
+        var string: String
+        var url: URL
+
+        func requestForPage(_ page: Int) -> URLRequest? {
+            guard let pageURL = getPageURL(page, from: url) else { return nil }
+            return feedAPI.requestWithXApiKeyHeader(from: pageURL)
+        }
+    }
+
+    func queryFromString(_ queryString: String) -> Query? {
+        guard let queryURL = buildQueryURL(queryString) else { return nil }
+        return Query(feedAPI: self, string: queryString, url: queryURL)
+    }
+
+
+    // MARK: NewsAPI.org JSON decoding
 
     struct NewsApiResponse: Decodable {
         var status: String
