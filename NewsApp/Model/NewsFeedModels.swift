@@ -28,7 +28,7 @@ typealias FeedAPI = NewsAPIorg
 typealias NewsItem = FeedAPI.NewsItem
 typealias ApiResponse = FeedAPI.NewsApiResponse
 
-class NewsFeed: ObservableObject, RandomAccessCollection {
+class NewsFeed: ObservableObject {
 
     enum LoadStatus {
         case ready (nextPage: Int)
@@ -50,18 +50,42 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
     private var loadStatus = LoadStatus.ready(nextPage: 1)
     private var cancellable: AnyCancellable?
 
-    typealias Element = NewsItem
-
     @Published var newsItems = [NewsItem]()
 
-    var startIndex: Int { newsItems.startIndex }
-    var endIndex: Int { newsItems.endIndex }
+    private let itemSubject = PassthroughSubject<NewsItem?, Error>()
 
-    subscript(position: Int) -> NewsItem {
-        return newsItems[position]
+
+    init() {
+        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
+        cancellable = feedSubscription(feed: feedAPI, query: Self.query)
     }
 
-    private let itemSubject = PassthroughSubject<NewsItem?, Error>()
+}
+
+extension NewsFeed {
+
+    func loadMoreData(ifListEndsWith: NewsItem? = nil) {
+        itemSubject.send(ifListEndsWith)
+    }
+
+    func nFromEnd(offset: Int, item: NewsItem) -> Bool {
+        guard !newsItems.isEmpty else {
+            return false
+        }
+
+        guard let itemIndex = firstIndex(where: { AnyHashable($0.id) == AnyHashable(item.id) }) else {
+            return false
+        }
+
+        let distance = self.distance(from: itemIndex, to: endIndex)
+        let offset = offset < count ? offset : count - 1
+        return offset == (distance - 1)
+    }
+
+}
+
+extension NewsFeed {
+
     private func feedSubscription(feed api: FeedAPI, query: String? = nil) -> AnyCancellable {
         print("setting up Feed Subscription")
         return itemSubject
@@ -106,11 +130,11 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
             })
             .receive(on: RunLoop.main)
             .sink(receiveCompletion: { completion in
-                switch completion {
-                case .failure(let error): print("subscription ended in error: \(error) - \(error.localizedDescription)")
-                case .finished: print("subscription finished")
-                }
-            },
+                    switch completion {
+                    case .failure(let error): print("subscription ended in error: \(error) - \(error.localizedDescription)")
+                    case .finished: print("subscription finished")
+                    }
+                 },
                   receiveValue: { apiResponse in
                     self.newsItems.append(contentsOf: apiResponse.responseItems)
                     if case let .loading(page) = self.loadStatus {
@@ -118,33 +142,20 @@ class NewsFeed: ObservableObject, RandomAccessCollection {
                     } else {
                         self.loadStatus = .done
                     }
-            }
-        )
-
+                }
+            )
     }
 
+}
 
-    init() {
-        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        cancellable = feedSubscription(feed: feedAPI, query: Self.query)
-    }
+extension NewsFeed: RandomAccessCollection {
 
-    func loadMoreData(ifListEndsWith: NewsItem? = nil) {
-        itemSubject.send(ifListEndsWith)
-    }
+    typealias Element = NewsItem
+    var startIndex: Int { newsItems.startIndex }
+    var endIndex: Int { newsItems.endIndex }
 
-    func nFromEnd(offset: Int, item: NewsItem) -> Bool {
-        guard !newsItems.isEmpty else {
-            return false
-        }
-
-        guard let itemIndex = firstIndex(where: { AnyHashable($0.id) == AnyHashable(item.id) }) else {
-            return false
-        }
-
-        let distance = self.distance(from: itemIndex, to: endIndex)
-        let offset = offset < count ? offset : count - 1
-        return offset == (distance - 1)
+    subscript(position: Int) -> NewsItem {
+        return newsItems[position]
     }
 
 }
