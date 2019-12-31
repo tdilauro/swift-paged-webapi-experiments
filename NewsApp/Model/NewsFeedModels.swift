@@ -51,11 +51,15 @@ class NewsFeed: ObservableObject {
 
     private let feedAPI: FeedAPI
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
+    private var urlSessionConfig = URLSessionConfiguration.default
+    private var session: URLSession
 
 
     init() {
         feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString)
+        let sessionConfig = Self.setupURLSessionConfig(URLSessionConfiguration.default)
+        session = URLSession(configuration: sessionConfig)
+        cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString, session: self.session)
     }
 
 }
@@ -86,12 +90,21 @@ extension NewsFeed {
         return offset == (distance - 1)
     }
 
+    static func setupURLSessionConfig(_ config: URLSessionConfiguration) -> URLSessionConfiguration {
+        config.allowsCellularAccess = true
+        config.allowsConstrainedNetworkAccess = true
+        config.requestCachePolicy = .returnCacheDataElseLoad
+//        config.httpAdditionalHeaders: [AnyHashable : Any]?
+
+        return config
+    }
 }
 
 extension NewsFeed {
 
-    private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher) -> AnyCancellable {
-        print("setting up Query/Page Subscription")
+    private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher, session: URLSession? = nil) -> AnyCancellable {
+
+        let urlSession = session ?? self.session
 
         let queryPublisher = queryString
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
@@ -121,7 +134,6 @@ extension NewsFeed {
             .filter({ _, item -> Bool in
                 guard case let .ready(nextPage) = self.loadStatus else { return false }
 
-                print("filter: \(self.loadStatus) \(self.loadStatus.isReady)")
                 self.loadStatus = .loading(page: nextPage)
                 return true
             })
@@ -135,7 +147,7 @@ extension NewsFeed {
                 return request
             })
             .flatMap({ request in
-                URLSession.shared.dataTaskPublisher(for: request)
+                urlSession.dataTaskPublisher(for: request)
                     .mapError { $0 as Error }
             })
             .map { $0.data }
