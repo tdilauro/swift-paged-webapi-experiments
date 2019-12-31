@@ -20,6 +20,7 @@ struct ClearButton: ViewModifier {
                 Button(action: { self.text = "" }) {
                     Image(systemName: "xmark.circle")
                         .foregroundColor(Color(UIColor.opaqueSeparator))
+                        .padding()
                 }
                 .padding(.trailing, 8)
             }
