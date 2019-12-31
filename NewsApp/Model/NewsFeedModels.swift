@@ -21,10 +21,6 @@ enum ResponseStatus {
     case other (explanation: String)
 }
 
-enum FileError: Error {
-    case `default`
-}
-
 typealias FeedAPI = NewsAPIorg
 typealias NewsItem = FeedAPI.NewsItem
 typealias ApiResponse = FeedAPI.NewsApiResponse
@@ -47,24 +43,30 @@ class NewsFeed: ObservableObject {
 
     private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
 
-    private var loadStatus = LoadStatus.ready(nextPage: 1)
+    @Published var newsItems = [NewsItem]()
+    @Published var queryString: String = ""
+
+    private var loadStatus: LoadStatus = .ready(nextPage: 1)
     private var cancellable: AnyCancellable?
 
-    @Published var newsItems = [NewsItem]()
-    let queryString: String = "Cyclone"
-
+    private let feedAPI: FeedAPI
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
 
 
     init() {
-        let feedAPI = NewsAPIorg(apiKey: Self.apiKey)
-        let query = feedAPI.queryFromString(queryString)
-        cancellable = feedSubscription(feed: feedAPI, query: query)
+        feedAPI = NewsAPIorg(apiKey: Self.apiKey)
+        cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString)
     }
 
 }
 
 extension NewsFeed {
+
+    func newQuery() {
+        newsItems.removeAll()
+        loadStatus = .ready(nextPage: 1)
+        loadMoreData()
+    }
 
     func loadMoreData(ifListEndsWith: NewsItem? = nil) {
         itemSubject.send(ifListEndsWith)
@@ -88,25 +90,46 @@ extension NewsFeed {
 
 extension NewsFeed {
 
-    private func feedSubscription(feed api: FeedAPI, query: FeedAPI.Query? = nil) -> AnyCancellable {
-        print("setting up Feed Subscription")
-        return itemSubject
-            .filter({ article -> Bool in
-                guard case let .ready(nextPage) = self.loadStatus else { return false }
+    private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher) -> AnyCancellable {
+        print("setting up Query/Page Subscription")
 
-                if let article = article, !self.nFromEnd(offset: 4, item: article) {
+        let queryPublisher = queryString
+            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
+            .removeDuplicates()
+            .filter { "" != $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .tryMap { queryString -> FeedAPI.Query in
+                guard let query = self.feedAPI.queryFromString(queryString) else {
+                    throw NewsFeedError.queryError
+                }
+                self.newQuery()
+                return query
+            }
+            .eraseToAnyPublisher()
+
+        let pagePublisher = self.itemSubject
+            .filter({ item in
+                if let item = item, !self.nFromEnd(offset: 4, item: item) {
                     return false
                 }
+                return true
+            })
+            .removeDuplicates()
+            .eraseToAnyPublisher()
+
+        let publisher = queryPublisher
+            .combineLatest(pagePublisher) { query, item in return (query, item) }
+            .filter({ _, item -> Bool in
+                guard case let .ready(nextPage) = self.loadStatus else { return false }
 
                 print("filter: \(self.loadStatus) \(self.loadStatus.isReady)")
                 self.loadStatus = .loading(page: nextPage)
                 return true
             })
-            .tryMap({ _ -> URLRequest in
+            .tryMap({ query, _ -> URLRequest in
                 guard case let .loading(page) = self.loadStatus else {
                     throw NewsFeedError.pageError
                 }
-                guard let request = query?.requestForPage(page) else {
+                guard let request = query.requestForPage(page) else {
                     throw NewsFeedError.queryError
                 }
                 return request
@@ -146,6 +169,8 @@ extension NewsFeed {
                     }
                 }
             )
+
+        return publisher
     }
 
 }
@@ -270,7 +295,7 @@ extension NewsAPIorg {
         }
     }
 
-    struct NewsItem: Identifiable, Decodable {
+    struct NewsItem: Identifiable, Decodable, Equatable {
         var id = UUID()
 
         var title: String

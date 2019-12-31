@@ -12,15 +12,29 @@ struct NewsFeedView: View {
     @ObservedObject var newsFeed = NewsFeed()
 
     var body: some View {
-        List(newsFeed.newsItems) { (article: NewsItem) in
-            NewsFeedListItem(article: article)
-                .padding()
-                .onAppear {
-                    self.newsFeed.loadMoreData(ifListEndsWith: article)
+        NavigationView {
+            Form {
+                Section(header: Text("Query")) {
+                    HStack(alignment: .center) {
+                        TextField("Query", text: $newsFeed.queryString)
+                            .modifier(ClearButton(text: $newsFeed.queryString))
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                Section(header: Text("Results")) {
+                    List {
+                        ForEach(newsFeed.newsItems) { (article: NewsItem) in
+                            NewsFeedListItem(article: article)
+                                .padding()
+                                .onAppear {
+                                    self.newsFeed.loadMoreData(ifListEndsWith: article)
+                                }
+                        }
+                    }
+                }
             }
-        }
-        .onAppear {
-            self.newsFeed.loadMoreData()
+            .onAppear { self.newsFeed.loadMoreData() }
+            .navigationBarTitle(Text("NewsFeed"))
         }
     }
 }
@@ -41,6 +55,6 @@ struct NewsFeedListItem: View {
 
 struct NewsFeedView_Previews: PreviewProvider {
     static var previews: some View {
-        NewsFeedView()
+        NewsFeedView(newsFeed: NewsFeed())
     }
 }
