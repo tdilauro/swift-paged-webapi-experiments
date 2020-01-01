@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct NewsFeedView: View {
-    @ObservedObject var feedVM: FeedViewModel = FeedViewModel(NewsFeed())
+    @ObservedObject var feedVM: FeedViewModel
 
     init(_ viewModel: FeedViewModel) {
         feedVM = viewModel

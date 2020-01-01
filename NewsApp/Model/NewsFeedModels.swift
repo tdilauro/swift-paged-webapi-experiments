@@ -41,8 +41,6 @@ class NewsFeed: ObservableObject {
         }
     }
 
-    private static let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-
     @Published var newsItems = [NewsItem]()
     @Published var queryString: String = ""
 
@@ -55,8 +53,8 @@ class NewsFeed: ObservableObject {
     private var session: URLSession
 
 
-    init() {
-        feedAPI = NewsAPIorg(apiKey: Self.apiKey)
+    required init(apiKey: String) {
+        feedAPI = NewsAPIorg(apiKey: apiKey)
         let sessionConfig = Self.setupURLSessionConfig(URLSessionConfiguration.default)
         session = URLSession(configuration: sessionConfig)
         cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString, session: self.session)
@@ -94,7 +92,6 @@ extension NewsFeed {
         config.allowsCellularAccess = true
         config.allowsConstrainedNetworkAccess = true
         config.requestCachePolicy = .returnCacheDataElseLoad
-//        config.httpAdditionalHeaders: [AnyHashable : Any]?
 
         return config
     }

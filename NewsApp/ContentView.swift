@@ -9,10 +9,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    let newsFeed = NewsFeed()
+    let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
+    let feed = NewsFeed.self
 
     var body: some View {
-        NewsFeedView(FeedViewModel(newsFeed))
+        NewsFeedView( FeedViewModel(feed.init(apiKey: apiKey)) )
     }
 }
 
