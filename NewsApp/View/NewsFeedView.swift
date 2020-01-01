@@ -43,11 +43,14 @@ struct NewsFeedListItem: View {
     var article: NewsItem
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text(article.title)
-                .font(.headline)
-            Text(article.author)
-                .font(.subheadline)
+        HStack {
+            NewsFeedListItemImage(viewModel: ItemImageViewModel(imageUrl: article.imageURL))
+            VStack(alignment: .leading) {
+                Text(article.title)
+                    .font(.headline)
+                Text(article.author)
+                    .font(.subheadline)
+            }
         }
     }
 }

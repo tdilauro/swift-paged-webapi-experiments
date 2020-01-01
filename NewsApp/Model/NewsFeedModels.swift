@@ -312,15 +312,18 @@ extension NewsAPIorg {
 
         var title: String
         var author: String
+        var imageURL: String?
 
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             title = ( try? container.decode(String.self, forKey: .title) ) ?? "(untitled)"
             author = ( try? container.decode(String.self, forKey: .author) ) ?? "(unattributed)"
+            imageURL = ( try? container.decode(String.self, forKey: .imageURL))
         }
 
         enum CodingKeys: String, CodingKey {
             case title, author
+            case imageURL = "urlToImage"
         }
     }
 
