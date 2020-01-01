@@ -9,8 +9,10 @@
 import SwiftUI
 
 struct ContentView: View {
+    let newsFeed = NewsFeed()
+
     var body: some View {
-        NewsFeedView()
+        NewsFeedView(FeedViewModel(newsFeed))
     }
 }
 

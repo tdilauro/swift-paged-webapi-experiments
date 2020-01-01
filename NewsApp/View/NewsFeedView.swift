@@ -9,39 +9,45 @@
 import SwiftUI
 
 struct NewsFeedView: View {
-    @ObservedObject var newsFeed = NewsFeed()
+    @ObservedObject var feedVM: FeedViewModel = FeedViewModel(NewsFeed())
+
+    init(_ viewModel: FeedViewModel) {
+        feedVM = viewModel
+    }
 
     var body: some View {
         NavigationView {
             Form {
                 Section(header: Text("Query")) {
                     HStack(alignment: .center) {
-                        TextField("Query", text: $newsFeed.queryString)
-                            .modifier(ClearButton(text: $newsFeed.queryString))
+                        TextField("Query", text: $feedVM.queryString)
+                            .modifier(ClearButton(text: $feedVM.queryString))
                             .multilineTextAlignment(.leading)
                     }
                 }
                 Section(header: Text("Results")) {
                     List {
-                        ForEach(newsFeed.newsItems) { (article: NewsItem) in
-                            NewsFeedListItemView(FeedItemViewModel(article))
+                        ForEach(feedVM.itemViewModels, id: \.item.id) { (itemVM: FeedItemViewModel) in
+                            NewsFeedListItemView(itemVM)
                                 .padding()
                                 .onAppear {
-                                    self.newsFeed.loadMoreData(ifListEndsWith: article)
+                                    self.feedVM.currentItem(itemVM.item)
                                 }
                         }
                     }
                 }
             }
-            .onAppear { self.newsFeed.loadMoreData() }
+            .onAppear { self.feedVM.loadData() }
             .navigationBarTitle(Text("NewsFeed"))
         }
     }
 }
 
 
-struct NewsFeedView_Previews: PreviewProvider {
-    static var previews: some View {
-        NewsFeedView(newsFeed: NewsFeed())
-    }
-}
+//struct NewsFeedView_Previews: PreviewProvider {
+//    @ObservedObject static var feed = NewsFeed()
+//
+//    static var previews: some View {
+//        NewsFeedView(FeedViewModel($feed))
+//    }
+//}
