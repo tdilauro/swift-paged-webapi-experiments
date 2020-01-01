@@ -24,7 +24,7 @@ struct NewsFeedView: View {
                 Section(header: Text("Results")) {
                     List {
                         ForEach(newsFeed.newsItems) { (article: NewsItem) in
-                            NewsFeedListItem(article: article)
+                            NewsFeedListItemView(FeedItemViewModel(article))
                                 .padding()
                                 .onAppear {
                                     self.newsFeed.loadMoreData(ifListEndsWith: article)
@@ -35,22 +35,6 @@ struct NewsFeedView: View {
             }
             .onAppear { self.newsFeed.loadMoreData() }
             .navigationBarTitle(Text("NewsFeed"))
-        }
-    }
-}
-
-struct NewsFeedListItem: View {
-    var article: NewsItem
-
-    var body: some View {
-        HStack {
-            NewsFeedListItemImage(viewModel: ItemImageViewModel(imageUrl: article.imageURL))
-            VStack(alignment: .leading) {
-                Text(article.title)
-                    .font(.headline)
-                Text(article.author)
-                    .font(.subheadline)
-            }
         }
     }
 }
