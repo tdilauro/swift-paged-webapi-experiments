@@ -18,7 +18,6 @@
 		C4514FD423A876C60007EBFB /* feed-page1.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD323A876C60007EBFB /* feed-page1.json */; };
 		C4514FD623A8771F0007EBFB /* feed-page2.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD523A8771F0007EBFB /* feed-page2.json */; };
 		C4514FD823A8862D0007EBFB /* feed-page3.json in Resources */ = {isa = PBXBuildFile; fileRef = C4514FD723A8862D0007EBFB /* feed-page3.json */; };
-		C468605023BAE0E00012D80A /* DismissingKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C468604F23BAE0E00012D80A /* DismissingKeyboard.swift */; };
 		C47EFC3523BC0CCD000DDD08 /* ItemImageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47EFC3423BC0CCD000DDD08 /* ItemImageViewModel.swift */; };
 		C47EFC3723BC86F4000DDD08 /* NewsFeedListItemImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47EFC3623BC86F4000DDD08 /* NewsFeedListItemImage.swift */; };
 		C47EFC3A23BC991A000DDD08 /* UIImage-extension-publish-downloaded.swift in Sources */ = {isa = PBXBuildFile; fileRef = C47EFC3923BC991A000DDD08 /* UIImage-extension-publish-downloaded.swift */; };
@@ -44,7 +43,6 @@
 		C4514FD323A876C60007EBFB /* feed-page1.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page1.json"; sourceTree = "<group>"; };
 		C4514FD523A8771F0007EBFB /* feed-page2.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page2.json"; sourceTree = "<group>"; };
 		C4514FD723A8862D0007EBFB /* feed-page3.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "feed-page3.json"; sourceTree = "<group>"; };
-		C468604F23BAE0E00012D80A /* DismissingKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissingKeyboard.swift; sourceTree = "<group>"; };
 		C47EFC3423BC0CCD000DDD08 /* ItemImageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemImageViewModel.swift; sourceTree = "<group>"; };
 		C47EFC3623BC86F4000DDD08 /* NewsFeedListItemImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsFeedListItemImage.swift; sourceTree = "<group>"; };
 		C47EFC3923BC991A000DDD08 /* UIImage-extension-publish-downloaded.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage-extension-publish-downloaded.swift"; sourceTree = "<group>"; };
@@ -137,7 +135,6 @@
 			isa = PBXGroup;
 			children = (
 				C4919E1123BB1BC6002975CD /* ClearButton.swift */,
-				C468604F23BAE0E00012D80A /* DismissingKeyboard.swift */,
 			);
 			path = ViewModifiers;
 			sourceTree = "<group>";
@@ -242,7 +239,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C468605023BAE0E00012D80A /* DismissingKeyboard.swift in Sources */,
 				C47EFC3523BC0CCD000DDD08 /* ItemImageViewModel.swift in Sources */,
 				C4514FCF23A8617A0007EBFB /* NewsFeedModels.swift in Sources */,
 				C4514FD223A872500007EBFB /* NewsFeedView.swift in Sources */,
