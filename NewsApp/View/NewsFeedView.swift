@@ -18,9 +18,9 @@ struct NewsFeedView: View {
     var body: some View {
         NavigationView {
             Form {
-                Section(header: Text("Query")) {
+                Section(header: Text("Search NewsAPI.org")) {
                     HStack(alignment: .center) {
-                        TextField("Query", text: $feedVM.queryString)
+                        TextField("Enter query here...", text: $feedVM.queryString)
                             .modifier(ClearButton(text: $feedVM.queryString))
                             .multilineTextAlignment(.leading)
                     }
