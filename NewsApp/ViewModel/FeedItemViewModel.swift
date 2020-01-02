@@ -24,4 +24,8 @@ extension FeedItemViewModel {
         ItemImageViewModel(imageUrl: item.imageURL)
     }
 
+    var hasURL: Bool {
+        item.url == nil ? false : true
+    }
+
 }

@@ -10,19 +10,23 @@ import SwiftUI
 
 struct NewsFeedListItemView: View {
     var itemVM: FeedItemViewModel
+    @State var hasURL: Bool = false
 
     init(_ viewModel: FeedItemViewModel) {
-        itemVM = viewModel
+        self.itemVM = viewModel
+        hasURL = itemVM.hasURL
     }
 
     var body: some View {
         HStack {
-            NewsFeedListItemImage(viewModel: itemVM.imageViewModel)
-            VStack(alignment: .leading) {
-                Text(itemVM.item.title)
-                    .font(.headline)
-                Text(itemVM.item.author)
-                    .font(.subheadline)
+            NavigationLink(destination: WebView(url: itemVM.item.url!), isActive: self.$hasURL) {
+                NewsFeedListItemImage(viewModel: itemVM.imageViewModel)
+                VStack(alignment: .leading) {
+                    Text(itemVM.item.title)
+                        .font(.headline)
+                    Text(itemVM.item.author)
+                        .font(.subheadline)
+                }
             }
         }
     }
