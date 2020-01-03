@@ -1,0 +1,3 @@
+
+Resources:
+- default news icon: 
