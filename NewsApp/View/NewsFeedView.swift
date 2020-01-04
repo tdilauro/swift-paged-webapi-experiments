@@ -10,6 +10,8 @@ import SwiftUI
 
 struct NewsFeedView: View {
     @ObservedObject var feedVM: FeedViewModel
+    @ObservedObject var settingsVM = SettingsViewModel()
+    @State var presentingSettings = false
 
     init(_ viewModel: FeedViewModel) {
         feedVM = viewModel
@@ -38,7 +40,13 @@ struct NewsFeedView: View {
                 }
             }
             .onAppear { self.feedVM.loadData() }
+            .sheet(isPresented: $presentingSettings) {
+                SettingsView(settingsVM: self.settingsVM)
+            }
             .navigationBarTitle(Text("NewsFeed"))
+            .navigationBarItems(
+                trailing: Button(action: { self.presentingSettings = true }) { Text("Settings") }
+            )
         }
     }
 }
