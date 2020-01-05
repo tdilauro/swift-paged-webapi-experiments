@@ -27,7 +27,8 @@ class Settings: ObservableObject {
     private static let defaultDecoder = JSONDecoder()
     private static let defaultEncoder = JSONEncoder()
 
-    private var cancellable: AnyCancellable?
+    private var cancellables = Set<AnyCancellable>()
+    private var saveCancellable: AnyCancellable?
 
     // MARK: - Initializers
 
@@ -37,9 +38,10 @@ class Settings: ObservableObject {
         if let encoder = encoder { self.encoder = encoder }
         if let decoder = decoder { self.decoder = decoder }
 
-        cancellable = Self.load(forKey: key, store: store, decoder: decoder)
+        Self.load(forKey: key, store: store, decoder: decoder)
             .receive(on: RunLoop.main)
             .assign(to: \.model, on: self)
+            .store(in: &cancellables)
     }
 
 }
@@ -60,14 +62,22 @@ extension Settings {
             .eraseToAnyPublisher()
     }
 
-    func save(forKey key: String? = nil, store: UserDefaults? = nil, encoder: JSONEncoder? = nil) {
+    func save(_ model: Model, forKey key: String? = nil, store: UserDefaults? = nil, encoder: JSONEncoder? = nil) {
+
         let store = store ?? self.userDefaults
         let key = key ?? self.userDefaultsKey
         let encoder = encoder ?? self.encoder
 
-        if let encoded = try? encoder.encode(self.model) {
-            store.set(encoded, forKey: key)
-        }
+        self.saveCancellable = self.$model
+            .prefix(1)
+            .encode(encoder: encoder)
+            .sink(receiveCompletion: { completion in
+                if case let .failure(error) = completion {
+                    print("Settings(): save pipeline encoding failed with error: \(error)")
+                }
+            }, receiveValue: { encoded in
+                store.set(encoded, forKey: key)
+            })
     }
 
 }
@@ -77,9 +87,11 @@ extension Settings {
 
 class SettingsModel: Codable {
 
-    var apiKey: String = ""
+    var apiKey: String
 
-    init() {}
+    init() {
+        apiKey = ""
+    }
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)

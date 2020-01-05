@@ -9,11 +9,23 @@
 import SwiftUI
 
 struct ContentView: View {
-    let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
+    @ObservedObject var settingsVM = SettingsViewModel()
+    @State var presentingSettings = false
+
+//    let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
     let feed = NewsFeed.self
 
     var body: some View {
-        NewsFeedView( FeedViewModel(feed.init(apiKey: apiKey)) )
+        NavigationView {
+            NewsFeedView( FeedViewModel(feed.init(apiKey: settingsVM.apiKey)) )
+                .sheet(isPresented: $presentingSettings) {
+                    SettingsView(settingsVM: self.settingsVM)
+            }
+            .navigationBarTitle(Text("NewsFeed"))
+            .navigationBarItems(
+                trailing: Button(action: { self.presentingSettings = true }) { Text("Settings") }
+            )
+        }
     }
 }
 

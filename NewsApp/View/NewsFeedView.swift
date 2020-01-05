@@ -10,44 +10,33 @@ import SwiftUI
 
 struct NewsFeedView: View {
     @ObservedObject var feedVM: FeedViewModel
-    @ObservedObject var settingsVM = SettingsViewModel()
-    @State var presentingSettings = false
 
     init(_ viewModel: FeedViewModel) {
         feedVM = viewModel
     }
 
     var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Search NewsAPI.org")) {
-                    HStack(alignment: .center) {
-                        TextField("Enter query here...", text: $feedVM.queryString)
-                            .modifier(ClearButton(text: $feedVM.queryString))
-                            .multilineTextAlignment(.leading)
-                    }
+        Form {
+            Section(header: Text("Search NewsAPI.org")) {
+                HStack(alignment: .center) {
+                    TextField("Enter query here...", text: $feedVM.queryString)
+                        .modifier(ClearButton(text: $feedVM.queryString))
+                        .multilineTextAlignment(.leading)
                 }
-                Section(header: Text("Results")) {
-                    List {
-                        ForEach(feedVM.itemViewModels, id: \.item.id) { (itemVM: FeedItemViewModel) in
-                            NewsFeedListItemView(itemVM)
-                                .padding()
-                                .onAppear {
-                                    self.feedVM.currentItem(itemVM.item)
-                                }
+            }
+            Section(header: Text("Results")) {
+                List {
+                    ForEach(feedVM.itemViewModels, id: \.item.id) { (itemVM: FeedItemViewModel) in
+                        NewsFeedListItemView(itemVM)
+                            .padding()
+                            .onAppear {
+                                self.feedVM.currentItem(itemVM.item)
                         }
                     }
                 }
             }
-            .onAppear { self.feedVM.loadData() }
-            .sheet(isPresented: $presentingSettings) {
-                SettingsView(settingsVM: self.settingsVM)
-            }
-            .navigationBarTitle(Text("NewsFeed"))
-            .navigationBarItems(
-                trailing: Button(action: { self.presentingSettings = true }) { Text("Settings") }
-            )
         }
+        .onAppear { self.feedVM.loadData() }
     }
 }
 
