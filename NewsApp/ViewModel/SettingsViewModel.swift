@@ -42,6 +42,6 @@ class SettingsViewModel: ObservableObject {
     }
 
     func save() {
-        settings.save(self.model)
+        settingsManager.update(settings)
     }
 }
