@@ -10,14 +10,12 @@ import SwiftUI
 
 struct ContentView: View {
     @ObservedObject var settingsVM = SettingsViewModel()
+    @ObservedObject var feedVM = FeedViewModel()
     @State var presentingSettings = false
-
-//    let apiKey = "d7ef8df2c2c744c08febf60eeb87579d"
-    let feed = NewsFeed.self
 
     var body: some View {
         NavigationView {
-            NewsFeedView( FeedViewModel(feed.init(apiKey: settingsVM.apiKey)) )
+            NewsFeedView( feedVM )
                 .sheet(isPresented: $presentingSettings) {
                     SettingsView(settingsVM: self.settingsVM)
             }
