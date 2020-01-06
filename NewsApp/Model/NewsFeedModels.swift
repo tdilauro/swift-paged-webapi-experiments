@@ -54,10 +54,15 @@ class NewsFeed: ObservableObject {
 
 
     required init(apiKey: String) {
+        print("*** Initializing NewsFeed model with API key (\(apiKey))")
         feedAPI = NewsAPIorg(apiKey: apiKey)
         let sessionConfig = Self.setupURLSessionConfig(URLSessionConfiguration.default)
         session = URLSession(configuration: sessionConfig)
         cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString, session: self.session)
+    }
+
+    deinit {
+        print("*** De-initializing NewsFeed model with API key")
     }
 
 }
@@ -207,6 +212,7 @@ class NewsAPIorg {
     init(_ url: URL, apiKey: String) {
         self.apiKey = apiKey
         self.baseURL = url
+        print("*** Initializing NewsAPIorg model with API key (\(apiKey))")
     }
 
     convenience init?(url: String, apiKey: String) {
@@ -220,6 +226,9 @@ class NewsAPIorg {
         self.init(Self.defaultBaseURL, apiKey: apiKey)
     }
 
+    deinit {
+        print("*** De-initializing NewsAPIorg model with API key (\(apiKey))")
+    }
 }
 
 extension NewsAPIorg {
@@ -258,6 +267,7 @@ extension NewsAPIorg {
 
     private func requestWithXApiKeyHeader(from url: URL) -> URLRequest {
         var request = URLRequest(url: url)
+        print("setting X-Api-Key request header to (\(apiKey))")
         request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
         return request
     }

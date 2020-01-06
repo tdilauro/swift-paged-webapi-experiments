@@ -12,36 +12,53 @@ import Combine
 
 class SettingsViewModel: ObservableObject {
 
-    let settings: Settings
-    let model: Settings.Model
+    private let settingsManager: SettingsManager
+    private var settings: SettingsManager.Settings
 
     @Published var apiKey: String = ""
 
     private var cancellables = Set<AnyCancellable>()
 
-    init() {
-        settings = Settings.shared
-        model = settings.model
+    init(settingsManager: SettingsManager? = nil) {
+        if settingsManager != nil {
+            self.settingsManager = settingsManager!
+        } else {
+            self.settingsManager = SettingsManager.shared
+        }
+        settings = self.settingsManager.settings
 
-        apiKey = model.apiKey
+        apiKey = settings.apiKey
+        print("initial API key value: (\(apiKey))")
+        trackCentralSettings()
+        trackLocalChanges()
+    }
+
+    func trackCentralSettings() {
 
         // update local properties when centralized model changes
-        settings.$model
+        self.settingsManager.$settings
             .receive(on: RunLoop.main)
-            .sink(receiveValue: { model in
-                self.apiKey = model.apiKey
+            .sink(receiveValue: { settings in
+                print("centralized model changed (\(settings.apiKey))")
+                self.apiKey = settings.apiKey
             })
             .store(in: &cancellables)
+    }
+
+    func trackLocalChanges() {
 
         // update local copy of model with UI updated
         $apiKey
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .receive(on: RunLoop.main)
-            .assign(to: \.apiKey, on: self.model)
+            .sink(receiveValue: {
+                print("settingsVM apiKey changed (\($0))")
+                self.settings.apiKey = $0 })
             .store(in: &cancellables)
     }
 
     func save() {
         settingsManager.update(settings)
+        settingsManager.save()
     }
 }
