@@ -47,10 +47,10 @@ extension SettingsManager {
 
     private static func sharedUserDefaults(encoder: JSONEncoder? = nil, decoder: JSONDecoder? = nil) -> SettingsManager {
 
-        let store = Self.settingsDefaultStore
+        let userDefaults = Self.settingsDefaultStore
         let key = Self.settingsDefaultKey
 
-        let manager = fromUserDefaults(store, forKey: key, encoder: encoder, decoder: decoder)
+        let manager = fromUserDefaults(userDefaults, forKey: key, encoder: encoder, decoder: decoder)
         manager.load()
         return manager
     }
@@ -76,18 +76,10 @@ extension SettingsManager {
         let key = self.userDefaultsKey
         let decoder = self.decoder
 
-        let semaphore = DispatchSemaphore(value: 0)
-        _ = Result<Data?, Never>.Publisher(userDefaults.object(forKey: key) as? Data)
-            .map { $0 == nil ? Data() : $0! }
-            .decode(type: SettingsModel.self, decoder: decoder)
-            .replaceError(with: SettingsModel())
-            .eraseToAnyPublisher()
-            .receive(on: RunLoop.main)
-            .sink(receiveValue: { settings in
-                self.settings = settings
-                semaphore.signal()
-            })
-        _ = semaphore.wait(wallTimeout: .now() + .milliseconds(1_000))
+        guard let data = userDefaults.object(forKey: key) as? Data else { return }
+        guard let settings = try? decoder.decode(Settings.self, from: data) else { return }
+
+        self.settings = settings
     }
 
     func update(_ settings: Settings) {
@@ -95,25 +87,12 @@ extension SettingsManager {
     }
 
     func save() {
-        let userDefaults = self.userDefaults
-        let key = self.userDefaultsKey
-        let encoder = self.encoder
-
-        let semaphore = DispatchSemaphore(value: 0)
-        _ = self.$settings
-            .prefix(1)
-            .encode(encoder: encoder)
-            .sink(receiveCompletion: { completion in
-                if case let .failure(error) = completion {
-                    print("Settings(): save pipeline encoding failed with error: \(error)")
-                }
-                semaphore.signal()
-            }, receiveValue: { encoded in
-                print("storing settings: \(String(decoding: encoded, as: UTF8.self))")
-                userDefaults.set(encoded, forKey: key)
-                semaphore.signal()
-            })
-        _ = semaphore.wait(wallTimeout: .now() + .milliseconds(1_000))
+        do {
+            let encoded = try self.encoder.encode(self.settings)
+            self.userDefaults.set(encoded, forKey: self.userDefaultsKey)
+        } catch {
+            print("Error encoding settings data: '\(error)'")
+        }
     }
 
 }
@@ -142,5 +121,5 @@ struct SettingsModel: Codable {
     enum CodingKeys: String, CodingKey {
         case apiKey
     }
-    
+
 }
