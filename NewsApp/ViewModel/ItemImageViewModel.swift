@@ -25,10 +25,10 @@ class ItemImageViewModel: ObservableObject {
         guard let url = imageUrl else { return }
 
         cancellable = UIImage.publish(downloadedFrom: url)
-            .map { $0 == nil ? Self.brokenLinkImage : $0 }
+            .map { $0 == nil ? Self.brokenLinkImage : $0! }
             .receive(on: RunLoop.main)
-            .sink(receiveValue: { image in
-                guard let image = image else { return }
+            .sink(receiveValue: { [weak self] image in
+                guard let self = self else { return }
                 self.image = image
              })
     }

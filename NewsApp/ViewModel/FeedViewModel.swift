@@ -15,10 +15,9 @@ class FeedViewModel: ObservableObject {
     @Published var queryString: String = ""
     @Published private var apiKey: String
 
-    @Published private var feed: NewsFeed
+    private var feed: NewsFeed?
     private let settingsManager: SettingsManager
 
-//    private var cancellables = Set<AnyCancellable>()
     private var settingsSubscription: AnyCancellable?
     private var apiKeySubscription: AnyCancellable?
     private var itemsSubscription: AnyCancellable?
@@ -26,62 +25,63 @@ class FeedViewModel: ObservableObject {
 
 
     init(settingsManager: SettingsManager? = nil) {
-        print("*** Initializing FeedViewModel")
+//        print("*** Initializing FeedViewModel")
         if settingsManager != nil {
             self.settingsManager = settingsManager!
         } else {
             self.settingsManager = SettingsManager.shared
         }
 
-        let apiKey = self.settingsManager.settings.apiKey
-        self.apiKey = apiKey
-        self.feed = NewsFeed(apiKey: apiKey)
+        self.apiKey = self.settingsManager.settings.apiKey
+
+        startSubscriptions()
+    }
+
+    func startSubscriptions() {
 
         self.settingsSubscription = self.settingsManager.$settings
 //            .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .dropFirst()
             .map { $0.apiKey }
-            .print("FeedVM: apiKey from Model")
+//            .print("FeedVM: apiKey from Model")
             .receive(on: RunLoop.main)
             .assign(to: \.apiKey, on: self)
-//            .store(in: &cancellables)
 
         self.apiKeySubscription = self.$apiKey
+            .removeDuplicates()
             .receive(on: RunLoop.main)
             .sink(receiveValue: { apiKey in
-                print("FeedVM: api key updated (\(apiKey)). generating new feed.")
-                self.queryString = ""
-                self.feed = NewsFeed(apiKey: apiKey)
-
-                self.querySubscription = self.$queryString
-                    .assign(to: \.queryString, on: self.feed)
-                self.itemsSubscription = self.feed.$newsItems
-                    .map { $0.map { FeedItemViewModel($0) } }
-                    .assign(to: \.itemViewModels, on: self)
-
-
+//                print("FeedVM: api key updated (\(apiKey)). generating new feed.")
+                self.restartFeed()
             })
-//            .store(in: &cancellables)
-
-//        $queryString
-//            .assign(to: \.queryString, on: self.feed)
-//            .store(in: &cancellables)
-
-//        feed.$newsItems
-//            .map { $0.map { FeedItemViewModel($0) } }
-//            .assign(to: \.itemViewModels, on: self)
-//            .store(in: &cancellables)
     }
+
+    func restartFeed() {
+        // cancel any existing feed
+        self.feed?.cancelSubscription()
+
+        let feed = NewsFeed(apiKey: self.apiKey)
+        self.feed = feed
+
+        self.queryString = ""
+
+        self.querySubscription = self.$queryString
+            .sink(receiveValue: { feed.queryString = $0 })
+        self.itemsSubscription = feed.$newsItems
+            .map { $0.map { FeedItemViewModel($0) } }
+            .assign(to: \.itemViewModels, on: self)
+    }
+
 }
 
 extension FeedViewModel {
 
     func loadData() {
-        feed.loadMoreData()
+        feed?.loadMoreData()
     }
 
     func currentItem(_ item: NewsItem) {
-        feed.loadMoreData(ifListEndsWith: item)
+        feed?.loadMoreData(ifListEndsWith: item)
     }
 
 }

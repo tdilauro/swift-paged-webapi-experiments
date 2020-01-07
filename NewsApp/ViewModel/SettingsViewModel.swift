@@ -28,18 +28,17 @@ class SettingsViewModel: ObservableObject {
         settings = self.settingsManager.settings
 
         apiKey = settings.apiKey
-        print("initial API key value: (\(apiKey))")
-        trackCentralSettings()
+        trackSharedSettings()
         trackLocalChanges()
     }
 
-    func trackCentralSettings() {
+    func trackSharedSettings() {
 
         // update local properties when centralized model changes
         self.settingsManager.$settings
             .receive(on: RunLoop.main)
             .sink(receiveValue: { settings in
-                print("centralized model changed (\(settings.apiKey))")
+//                print("centralized model changed (\(settings.apiKey))")
                 self.apiKey = settings.apiKey
             })
             .store(in: &cancellables)
@@ -52,7 +51,7 @@ class SettingsViewModel: ObservableObject {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .receive(on: RunLoop.main)
             .sink(receiveValue: {
-                print("settingsVM apiKey changed (\($0))")
+//                print("settingsVM apiKey changed (\($0))")
                 self.settings.apiKey = $0 })
             .store(in: &cancellables)
     }

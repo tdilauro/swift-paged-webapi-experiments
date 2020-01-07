@@ -48,22 +48,24 @@ class NewsFeed: ObservableObject {
     private var cancellable: AnyCancellable?
 
     private let feedAPI: FeedAPI
+    private var apiKey: String
     private let itemSubject = PassthroughSubject<NewsItem?, Error>()
     private var urlSessionConfig = URLSessionConfiguration.default
     private var session: URLSession
 
 
     required init(apiKey: String) {
-        print("*** Initializing NewsFeed model with API key (\(apiKey))")
+//        print("*** Initializing NewsFeed model with API key (\(apiKey))")
+        self.apiKey = apiKey
         feedAPI = NewsAPIorg(apiKey: apiKey)
         let sessionConfig = Self.setupURLSessionConfig(URLSessionConfiguration.default)
         session = URLSession(configuration: sessionConfig)
         cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString, session: self.session)
     }
 
-    deinit {
-        print("*** De-initializing NewsFeed model with API key")
-    }
+//    deinit {
+//        print("*** De-initializing NewsFeed model with API key (\(self.apiKey))")
+//    }
 
 }
 
@@ -71,7 +73,6 @@ extension NewsFeed {
 
     func newQuery() {
         newsItems.removeAll()
-        loadStatus = .ready(nextPage: 1)
         loadMoreData()
     }
 
@@ -104,6 +105,11 @@ extension NewsFeed {
 
 extension NewsFeed {
 
+
+    func cancelSubscription() {
+        self.cancellable = nil
+    }
+
     private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher, session: URLSession? = nil) -> AnyCancellable {
 
         let urlSession = session ?? self.session
@@ -113,9 +119,10 @@ extension NewsFeed {
             .removeDuplicates()
             .filter { "" != $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .tryMap { queryString -> FeedAPI.Query in
-                guard let query = self.feedAPI.queryFromString(queryString) else {
+                guard let query = api.queryFromString(queryString) else {
                     throw NewsFeedError.queryError
                 }
+                self.loadStatus = .ready(nextPage: 1)
                 self.newQuery()
                 return query
             }
@@ -210,9 +217,9 @@ class NewsAPIorg {
     private let baseURL: URL
 
     init(_ url: URL, apiKey: String) {
+        //        print("*** Initializing NewsAPIorg model with API key (\(apiKey))")
         self.apiKey = apiKey
         self.baseURL = url
-        print("*** Initializing NewsAPIorg model with API key (\(apiKey))")
     }
 
     convenience init?(url: String, apiKey: String) {
@@ -226,9 +233,9 @@ class NewsAPIorg {
         self.init(Self.defaultBaseURL, apiKey: apiKey)
     }
 
-    deinit {
-        print("*** De-initializing NewsAPIorg model with API key (\(apiKey))")
-    }
+//    deinit {
+//        print("*** De-initializing NewsAPIorg model with API key (\(apiKey))")
+//    }
 }
 
 extension NewsAPIorg {
@@ -267,7 +274,7 @@ extension NewsAPIorg {
 
     private func requestWithXApiKeyHeader(from url: URL) -> URLRequest {
         var request = URLRequest(url: url)
-        print("setting X-Api-Key request header to (\(apiKey))")
+//        print("setting X-Api-Key request header to (\(apiKey))")
         request.setValue(apiKey, forHTTPHeaderField: "X-Api-Key")
         return request
     }
