@@ -28,8 +28,7 @@ class ItemImageViewModel: ObservableObject {
             .map { $0 == nil ? Self.brokenLinkImage : $0! }
             .receive(on: RunLoop.main)
             .sink(receiveValue: { [weak self] image in
-                guard let self = self else { return }
-                self.image = image
+                self?.image = image
              })
     }
 

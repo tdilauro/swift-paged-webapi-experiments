@@ -97,7 +97,7 @@ extension NewsFeed {
     static func setupURLSessionConfig(_ config: URLSessionConfiguration) -> URLSessionConfiguration {
         config.allowsCellularAccess = true
         config.allowsConstrainedNetworkAccess = true
-        config.requestCachePolicy = .returnCacheDataElseLoad
+        config.requestCachePolicy = .reloadRevalidatingCacheData
 
         return config
     }

@@ -24,7 +24,7 @@ extension UIImage {
                 guard let url = URL(string: urlString) else { throw ImageError.urlError(urlString) }
                 return url
             })
-            .map { URLRequest(url: $0, cachePolicy: .reloadRevalidatingCacheData) }
+            .map { URLRequest(url: $0, cachePolicy: .returnCacheDataElseLoad) }
             .flatMap({ request in
                 URLSession.shared.dataTaskPublisher(for: request)
                     .mapError { $0 as Error }
