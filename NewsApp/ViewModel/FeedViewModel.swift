@@ -16,7 +16,7 @@ class FeedViewModel: ObservableObject {
     @Published var queryString: String = ""
     @Published private var apiKey: String
 
-    private var feed: NewsFeed?
+    private var feed: FeedManager?
     private let settingsManager: SettingsManager
 
     private var settingsSubscription: AnyCancellable?
@@ -61,7 +61,7 @@ class FeedViewModel: ObservableObject {
         // cancel any existing feed
         self.feed?.cancelSubscription()
 
-        let feed = NewsFeed(apiKey: self.apiKey)
+        let feed = FeedManager(apiKey: self.apiKey)
         self.feed = feed
         self.feedTitle = feed.feedTitle
 
@@ -69,7 +69,7 @@ class FeedViewModel: ObservableObject {
 
         self.querySubscription = self.$queryString
             .sink(receiveValue: { feed.queryString = $0 })
-        self.itemsSubscription = feed.$newsItems
+        self.itemsSubscription = feed.$feedItems
             .map { $0.map { FeedItemViewModel($0) } }
             .assign(to: \.itemViewModels, on: self)
     }
@@ -82,7 +82,7 @@ extension FeedViewModel {
         feed?.loadMoreData()
     }
 
-    func currentItem(_ item: NewsItem) {
+    func currentItem(_ item: FeedItem) {
         feed?.loadMoreData(ifListEndsWith: item)
     }
 

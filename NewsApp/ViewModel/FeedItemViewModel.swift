@@ -10,9 +10,9 @@ import Foundation
 
 class FeedItemViewModel {
 
-    var item: NewsItem
+    var item: FeedItem
 
-    init(_ feedItem: NewsItem) {
+    init(_ feedItem: FeedItem) {
         self.item = feedItem
     }
 

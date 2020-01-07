@@ -108,13 +108,13 @@ extension NewsAPIorg {
 
 extension NewsAPIorg {
 
-    struct NewsApiResponse: Decodable {
+    struct ApiResponse: Decodable {
         var status: String
         var message: String?
-        var articles: [NewsItem]?
+        var articles: [Item]?
 
         // MARK - Paged WebAPI (todo: Protocol?)
-        var responseItems: [NewsItem] { return self.articles ?? [] }
+        var responseItems: [Item] { return self.articles ?? [] }
         var responseStatus: ResponseStatus {
             switch self.status {
             case "ok": return .hasItems
@@ -124,7 +124,7 @@ extension NewsAPIorg {
         }
     }
 
-    struct NewsItem: Identifiable, Decodable, Equatable {
+    struct Item: Identifiable, Decodable, Equatable {
         var id = UUID()
 
         var title: String

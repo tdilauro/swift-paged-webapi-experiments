@@ -1,5 +1,5 @@
 //
-//  NewsFeedModels.swift
+//  FeedManager.swift
 //  NewsApp
 //
 //  Created by Tim DiLauro on 12/16/19.
@@ -10,7 +10,7 @@ import Foundation
 import Combine
 
 
-enum NewsFeedError: Error {
+enum FeedError: Error {
     case pageError
     case queryError
     case requestError
@@ -22,10 +22,10 @@ enum ResponseStatus {
 }
 
 typealias FeedAPI = NewsAPIorg
-typealias NewsItem = FeedAPI.NewsItem
-typealias ApiResponse = FeedAPI.NewsApiResponse
+typealias FeedItem = FeedAPI.Item
+typealias ApiResponse = FeedAPI.ApiResponse
 
-class NewsFeed: ObservableObject {
+class FeedManager: ObservableObject {
 
     enum LoadStatus {
         case ready (nextPage: Int)
@@ -41,7 +41,7 @@ class NewsFeed: ObservableObject {
         }
     }
 
-    @Published var newsItems = [NewsItem]()
+    @Published var feedItems = [FeedItem]()
     @Published var queryString: String = ""
     private(set) var feedTitle: String
 
@@ -50,7 +50,7 @@ class NewsFeed: ObservableObject {
 
     private let feedAPI: FeedAPI
     private var apiKey: String
-    private let itemSubject = PassthroughSubject<NewsItem?, Error>()
+    private let itemSubject = PassthroughSubject<FeedItem?, Error>()
     private var urlSessionConfig = URLSessionConfiguration.default
     private var session: URLSession
 
@@ -71,19 +71,19 @@ class NewsFeed: ObservableObject {
 
 }
 
-extension NewsFeed {
+extension FeedManager {
 
     func newQuery() {
-        newsItems.removeAll()
+        feedItems.removeAll()
         loadMoreData()
     }
 
-    func loadMoreData(ifListEndsWith: NewsItem? = nil) {
+    func loadMoreData(ifListEndsWith: FeedItem? = nil) {
         itemSubject.send(ifListEndsWith)
     }
 
-    func nFromEnd(offset: Int, item: NewsItem) -> Bool {
-        guard !newsItems.isEmpty else {
+    func nFromEnd(offset: Int, item: FeedItem) -> Bool {
+        guard !feedItems.isEmpty else {
             return false
         }
 
@@ -105,7 +105,7 @@ extension NewsFeed {
     }
 }
 
-extension NewsFeed {
+extension FeedManager {
 
 
     func cancelSubscription() {
@@ -122,7 +122,7 @@ extension NewsFeed {
             .filter { "" != $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .tryMap { queryString -> FeedAPI.Query in
                 guard let query = api.queryFromString(queryString) else {
-                    throw NewsFeedError.queryError
+                    throw FeedError.queryError
                 }
                 self.loadStatus = .ready(nextPage: 1)
                 self.newQuery()
@@ -150,10 +150,10 @@ extension NewsFeed {
             })
             .tryMap({ query, _ -> URLRequest in
                 guard case let .loading(page) = self.loadStatus else {
-                    throw NewsFeedError.pageError
+                    throw FeedError.pageError
                 }
                 guard let request = query.requestForPage(page) else {
-                    throw NewsFeedError.queryError
+                    throw FeedError.queryError
                 }
                 return request
             })
@@ -184,7 +184,7 @@ extension NewsFeed {
                     }
                  },
                   receiveValue: { apiResponse in
-                    self.newsItems.append(contentsOf: apiResponse.responseItems)
+                    self.feedItems.append(contentsOf: apiResponse.responseItems)
                     if case let .loading(page) = self.loadStatus {
                         self.loadStatus = .ready(nextPage: page + 1)
                     } else {
@@ -198,14 +198,14 @@ extension NewsFeed {
 
 }
 
-extension NewsFeed: RandomAccessCollection {
+extension FeedManager: RandomAccessCollection {
 
-    typealias Element = NewsItem
-    var startIndex: Int { newsItems.startIndex }
-    var endIndex: Int { newsItems.endIndex }
+    typealias Element = FeedItem
+    var startIndex: Int { feedItems.startIndex }
+    var endIndex: Int { feedItems.endIndex }
 
-    subscript(position: Int) -> NewsItem {
-        return newsItems[position]
+    subscript(position: Int) -> FeedItem {
+        return feedItems[position]
     }
 
 }
