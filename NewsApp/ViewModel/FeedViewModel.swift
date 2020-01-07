@@ -11,6 +11,7 @@ import Combine
 
 class FeedViewModel: ObservableObject {
 
+    private(set) var feedTitle: String = ""
     @Published private(set) var itemViewModels = [FeedItemViewModel]()
     @Published var queryString: String = ""
     @Published private var apiKey: String
@@ -62,6 +63,7 @@ class FeedViewModel: ObservableObject {
 
         let feed = NewsFeed(apiKey: self.apiKey)
         self.feed = feed
+        self.feedTitle = feed.feedTitle
 
         self.queryString = ""
 

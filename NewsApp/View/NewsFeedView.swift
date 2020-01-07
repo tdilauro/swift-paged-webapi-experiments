@@ -17,7 +17,7 @@ struct NewsFeedView: View {
 
     var body: some View {
         Form {
-            Section(header: Text("Search NewsAPI.org")) {
+            Section(header: Text("Search \(feedVM.feedTitle)")) {
                 HStack(alignment: .center) {
                     TextField("Enter query here...", text: $feedVM.queryString)
                         .modifier(ClearButton(text: $feedVM.queryString))

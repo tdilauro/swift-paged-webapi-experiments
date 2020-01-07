@@ -43,6 +43,7 @@ class NewsFeed: ObservableObject {
 
     @Published var newsItems = [NewsItem]()
     @Published var queryString: String = ""
+    private(set) var feedTitle: String
 
     private var loadStatus: LoadStatus = .ready(nextPage: 1)
     private var cancellable: AnyCancellable?
@@ -58,6 +59,7 @@ class NewsFeed: ObservableObject {
 //        print("*** Initializing NewsFeed model with API key (\(apiKey))")
         self.apiKey = apiKey
         feedAPI = NewsAPIorg(apiKey: apiKey)
+        feedTitle = type(of: feedAPI).title
         let sessionConfig = Self.setupURLSessionConfig(URLSessionConfiguration.default)
         session = URLSession(configuration: sessionConfig)
         cancellable = feedSubscription(feed: feedAPI, queryString: self.$queryString, session: self.session)
@@ -211,6 +213,7 @@ extension NewsFeed: RandomAccessCollection {
 
 class NewsAPIorg {
 
+    static let title = "NewsAPI.org"
     private static let defaultBaseURL = URL(string: "https://newsapi.org/v2/everything")!
 
     private let apiKey: String
