@@ -100,13 +100,17 @@ extension SettingsManager {
 
 // MARK: - Models
 
-struct SettingsModel: Codable {
+struct SettingsModel {
 
     var apiKey: String
 
     init() {
         apiKey = ""
     }
+
+}
+
+extension SettingsModel: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
