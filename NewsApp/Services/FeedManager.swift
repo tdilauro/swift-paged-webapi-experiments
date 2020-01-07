@@ -112,43 +112,49 @@ extension FeedManager {
         self.cancellable = nil
     }
 
-    private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher, session: URLSession? = nil) -> AnyCancellable {
-
-        let urlSession = session ?? self.session
-
-        let queryPublisher = queryString
+    private func queryStringUpdatePublisher(queryString: Published<String>.Publisher) -> AnyPublisher<String, Never> {
+        queryString
             .debounce(for: .milliseconds(500), scheduler: RunLoop.main)
             .removeDuplicates()
             .filter { "" != $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .tryMap { queryString -> FeedAPI.Query in
+            .eraseToAnyPublisher()
+    }
+
+    private func itemListExhaustedPublisher(distance fromExhaustion: Int) -> AnyPublisher<Void, Error> {
+        self.itemSubject
+            .filter({ item in
+                if let item = item, !self.nFromEnd(offset: fromExhaustion, item: item) {
+                    return false
+                }
+                return true
+            })
+            .removeDuplicates()
+            .map { _ in }
+            .eraseToAnyPublisher()
+    }
+
+    private func feedSubscription(feed api: FeedAPI, queryString: Published<String>.Publisher, session: URLSession) -> AnyCancellable {
+
+        let queryPublisher = queryStringUpdatePublisher(queryString: queryString)
+        let pageAdvanceEventPublisher = itemListExhaustedPublisher(distance: 4)
+
+        let subscription = queryPublisher
+            .tryMap({ queryString -> FeedAPI.Query in
                 guard let query = api.queryFromString(queryString) else {
                     throw FeedError.queryError
                 }
                 self.loadStatus = .ready(nextPage: 1)
                 self.newQuery()
                 return query
-            }
-            .eraseToAnyPublisher()
-
-        let pagePublisher = self.itemSubject
-            .filter({ item in
-                if let item = item, !self.nFromEnd(offset: 4, item: item) {
-                    return false
-                }
-                return true
             })
-            .removeDuplicates()
-            .eraseToAnyPublisher()
-
-        let publisher = queryPublisher
-            .combineLatest(pagePublisher) { query, item in return (query, item) }
-            .filter({ _, item -> Bool in
+            .combineLatest(pageAdvanceEventPublisher) { query, _ in return query }
+            .filter({ _ in
                 guard case let .ready(nextPage) = self.loadStatus else { return false }
 
                 self.loadStatus = .loading(page: nextPage)
                 return true
             })
-            .tryMap({ query, _ -> URLRequest in
+            .tryMap({ query -> URLRequest in
                 guard case let .loading(page) = self.loadStatus else {
                     throw FeedError.pageError
                 }
@@ -158,7 +164,7 @@ extension FeedManager {
                 return request
             })
             .flatMap({ request in
-                urlSession.dataTaskPublisher(for: request)
+                session.dataTaskPublisher(for: request)
                     .mapError { $0 as Error }
             })
             .map { $0.data }
@@ -180,7 +186,7 @@ extension FeedManager {
             .sink(receiveCompletion: { completion in
                     switch completion {
                     case .failure(let error): print("subscription ended in error: \(error) - \(error.localizedDescription)")
-                    case .finished: print("subscription finished")
+                    case .finished: self.loadStatus = .done
                     }
                  },
                   receiveValue: { apiResponse in
@@ -193,7 +199,7 @@ extension FeedManager {
                 }
             )
 
-        return publisher
+        return subscription
     }
 
 }
