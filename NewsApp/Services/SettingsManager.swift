@@ -103,9 +103,11 @@ extension SettingsManager {
 struct SettingsModel {
 
     var apiKey: String
+    var lowDataImages: Bool
 
     init() {
         apiKey = ""
+        lowDataImages = true
     }
 
 }
@@ -115,15 +117,18 @@ extension SettingsModel: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         apiKey = (try? container.decode(String.self, forKey: .apiKey)) ?? ""
+        lowDataImages = (try? container.decode(Bool.self, forKey: .lowDataImages)) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(apiKey, forKey: .apiKey)
+        try container.encode(lowDataImages, forKey: .lowDataImages)
     }
 
     enum CodingKeys: String, CodingKey {
         case apiKey
+        case lowDataImages
     }
 
 }

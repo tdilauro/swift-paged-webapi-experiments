@@ -24,6 +24,9 @@ struct SettingsView: View {
                     .multilineTextAlignment(.center)
 
                 Form {
+                    Section(header: Text("App-Level Settings")) {
+                        Toggle("Load images in Low Data Mode", isOn: self.$settingsVM.lowDataImages)
+                    }
                     Section(header: Text("Authorization")) {
                         LabeledTextField("API Key", placeholder: "token", field: self.$settingsVM.apiKey)
                     }

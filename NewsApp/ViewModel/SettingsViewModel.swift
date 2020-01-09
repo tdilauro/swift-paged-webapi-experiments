@@ -16,6 +16,7 @@ class SettingsViewModel: ObservableObject {
     private var settings: SettingsManager.Settings
 
     @Published var apiKey: String = ""
+    @Published var lowDataImages: Bool
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -26,8 +27,11 @@ class SettingsViewModel: ObservableObject {
             self.settingsManager = SettingsManager.shared
         }
         settings = self.settingsManager.settings
+        print("Settings: \(self.settingsManager.settings)")
 
         apiKey = settings.apiKey
+        lowDataImages = settings.lowDataImages
+
         trackSharedSettings()
         trackLocalChanges()
     }
@@ -50,9 +54,12 @@ class SettingsViewModel: ObservableObject {
         $apiKey
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .receive(on: RunLoop.main)
-            .sink(receiveValue: {
-//                print("settingsVM apiKey changed (\($0))")
-                self.settings.apiKey = $0 })
+            .sink(receiveValue: { self.settings.apiKey = $0 })
+            .store(in: &cancellables)
+
+        $lowDataImages
+            .receive(on: RunLoop.main)
+            .sink(receiveValue: { self.settings.lowDataImages = $0 })
             .store(in: &cancellables)
     }
 
