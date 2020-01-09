@@ -27,7 +27,6 @@ class SettingsViewModel: ObservableObject {
             self.settingsManager = SettingsManager.shared
         }
         settings = self.settingsManager.settings
-        print("Settings: \(self.settingsManager.settings)")
 
         apiKey = settings.apiKey
         lowDataImages = settings.lowDataImages
@@ -42,7 +41,6 @@ class SettingsViewModel: ObservableObject {
         self.settingsManager.$settings
             .receive(on: RunLoop.main)
             .sink(receiveValue: { settings in
-//                print("centralized model changed (\(settings.apiKey))")
                 self.apiKey = settings.apiKey
             })
             .store(in: &cancellables)

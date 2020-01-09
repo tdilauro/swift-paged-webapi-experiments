@@ -12,7 +12,7 @@ import Combine
 
 class ItemImageViewModel: ObservableObject {
 
-    @Published var image: UIImage = UIImage()
+    @Published var image: UIImage
 
     static private let defaultFeedImage = UIImage(named: "Default Feed Icon")!
     static private let brokenLinkImage = UIImage(named: "Broken Link Icon")!
@@ -24,7 +24,12 @@ class ItemImageViewModel: ObservableObject {
 
         guard let url = imageUrl else { return }
 
-        cancellable = UIImage.publish(downloadedFrom: url)
+        let lowDataImagesAllowed = SettingsManager.shared.settings.lowDataImages
+
+        cancellable = UIImage.publish(downloadedFrom: url,
+                                      loadInLowDataMode: lowDataImagesAllowed,
+                                      loadOnExpensiveNetwork: lowDataImagesAllowed,
+                                      loadOnCellularNetwork: lowDataImagesAllowed)
             .map { $0 == nil ? Self.brokenLinkImage : $0! }
             .receive(on: RunLoop.main)
             .sink(receiveValue: { [weak self] image in
