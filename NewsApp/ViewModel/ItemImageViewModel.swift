@@ -16,6 +16,7 @@ class ItemImageViewModel: ObservableObject {
 
     static private let defaultFeedImage = UIImage(named: "Default Feed Icon")!
     static private let brokenLinkImage = UIImage(named: "Broken Link Icon")!
+    static private let constraintErrorImage = UIImage(systemName: "photo")!
 
     private var cancellable: AnyCancellable?
 
@@ -30,11 +31,21 @@ class ItemImageViewModel: ObservableObject {
                                       loadInLowDataMode: lowDataImagesAllowed,
                                       loadOnExpensiveNetwork: lowDataImagesAllowed,
                                       loadOnCellularNetwork: lowDataImagesAllowed)
-            .map { $0 == nil ? Self.brokenLinkImage : $0! }
+            .catch({ error -> Just<UIImage?> in
+                if let error = error as? URLError,
+                   let reason = error.networkUnavailableReason {
+                    switch reason {
+                    case .cellular, .constrained, .expensive: return Just(Self.constraintErrorImage)
+                    default: return Just(nil)
+                    }
+                }
+                return Just(nil)
+            })
+            .replaceNil(with: Self.brokenLinkImage)
             .receive(on: RunLoop.main)
             .sink(receiveValue: { [weak self] image in
                 self?.image = image
-             })
+            })
     }
 
 }

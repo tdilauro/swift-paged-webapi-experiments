@@ -20,9 +20,10 @@ extension UIImage {
     static func publish(downloadedFrom urlString: String,
                         loadInLowDataMode: Bool = true,
                         loadOnExpensiveNetwork: Bool = true,
-                        loadOnCellularNetwork: Bool = true) -> AnyPublisher<UIImage?, Never> {
+                        loadOnCellularNetwork: Bool = true) -> AnyPublisher<UIImage?, Error> {
 
         func createURLRequest(url: URL) -> URLRequest {
+            print("\(loadInLowDataMode) for \(urlString)")
             var request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad)
             request.allowsConstrainedNetworkAccess = loadInLowDataMode
             request.allowsExpensiveNetworkAccess = loadOnExpensiveNetwork
@@ -42,7 +43,6 @@ extension UIImage {
             })
             .map { $0.data }
             .map { UIImage(data: $0) }
-            .replaceError(with: nil)
             .eraseToAnyPublisher()
     }
 
